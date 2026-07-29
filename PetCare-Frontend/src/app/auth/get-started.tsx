@@ -5,13 +5,13 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -84,7 +84,7 @@ export default function PetCareOnboarding() {
       </View>
 
       <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: '#3B6EF6' }]}>Pet</Text>
+        <Text style={[styles.title, { color: '#2864a0' }]}>Pet</Text>
         <Text style={[styles.title, { color: '#3CB878' }]}>Care</Text>
       </View>
 

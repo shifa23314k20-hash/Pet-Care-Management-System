@@ -101,7 +101,7 @@ export default function ResetPassword() {
 
           <View style={styles.inputWrap}>
             <TextInput
-              placeholder="OTP"
+              // placeholder="OTP"
               value={otp}
               onChangeText={setOtp}
               keyboardType="number-pad"

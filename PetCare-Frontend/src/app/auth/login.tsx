@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Alert, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "@/services/auth";
 import {
   View,
@@ -37,9 +38,19 @@ export default function Login() {
         password,
       });
 
-      Alert.alert("Success", response.message);
+      console.log("Login Response:", response);
 
-      console.log("User:", response.user);
+      // Save logged in user
+      await AsyncStorage.setItem(
+        "user",
+        JSON.stringify(response.user)
+      );
+
+      // Verify it was saved
+      const savedUser = await AsyncStorage.getItem("user");
+      console.log("Saved User:", savedUser);
+
+      Alert.alert("Success", response.message);
 
       router.replace("/tabs/dashboard");
 
@@ -123,7 +134,7 @@ export default function Login() {
           {/* Forgot password */}
           <TouchableOpacity
             style={styles.forgotWrap}
-          onPress={() => router.push('/auth/forgot-password')}
+            onPress={() => router.push('/auth/forgot-password')}
           >
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>

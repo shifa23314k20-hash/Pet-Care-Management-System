@@ -6,10 +6,8 @@ import HealthRecord from "../model/healthRecord.model.js";
 import Appointment from "../model/appointment.model.js";
 import { generateHealthPDF } from "../services/pdf.services.js";
 
-
 export const chatWithAI = async (req, res) => {
     try {
-
         const { message } = req.body;
 
         if (!message) {

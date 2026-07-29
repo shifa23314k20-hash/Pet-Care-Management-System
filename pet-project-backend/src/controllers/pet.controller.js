@@ -106,7 +106,7 @@ export const getAllPets = async (req, res) => {
 export const getPetById = async (req, res) => {
   try {
     const { id } = req.params;
-    const pet = await Pet.findOne({id});
+    const pet = await Pet.find({id});
 
     if (!pet) {
       return res.status(404).json({
@@ -131,7 +131,7 @@ export const getPetById = async (req, res) => {
 export const getPetsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
-    const pets = await Pet.findOne({ userId });
+    const pets = await Pet.find({ userId });
 
     res.status(200).json({
       success: true,
