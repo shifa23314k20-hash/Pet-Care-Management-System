@@ -1,12 +1,12 @@
 import api from "./api";
 
 export const createPet = async (data: any) => {
-  const response = await api.post("/pet", data);
+  const response = await api.post("/pet/", data);
   return response.data;
 };
 
 export const getAllPets = async () => {
-  const response = await api.get("/pet");
+  const response = await api.get("/pet/");
   return response.data;
 };
 

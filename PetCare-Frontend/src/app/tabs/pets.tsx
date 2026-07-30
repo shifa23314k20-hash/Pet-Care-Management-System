@@ -1,124 +1,134 @@
-import React, { useEffect, useState } from "react";
-import {
-    StyleSheet,
-    Text,
-    View,
-    ScrollView,
-    Image,
-    TouchableOpacity,
-    ActivityIndicator,
-    Alert,
-} from "react-native";
-
+import { useCallback, useEffect, useState } from "react";
+import { router } from "expo-router";
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-import { Plus, ChevronRight } from "lucide-react-native";
-
+import { Plus, ChevronRight, Pencil } from "lucide-react-native";
 import { getPetsByUserId } from "@/services/pet"; // adjust path
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Modal, TextInput } from "react-native";
-import { createPet } from "@/services/pet";
+import { createPet, updatePet } from "@/services/pet";
+import PetForm from "@/components/petForm";
+import { useFocusEffect } from "expo-router/build/react-navigation";
 
 export default function MyPetsScreen() {
 
     const [pets, setPets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-
-    const [name, setName] = useState("");
-    const [type, setType] = useState("");
-    const [breed, setBreed] = useState("");
-    const [age, setAge] = useState("");
-    const [gender, setGender] = useState("male");
-    const [weight, setWeight] = useState("");
-    const [healthInfo, setHealthInfo] = useState("");
-    const [petImage, setPetImage] = useState("");
-
     const [saving, setSaving] = useState(false);
+
+    const [editingPet, setEditingPet] = useState<any>(null);
 
     useEffect(() => {
         fetchPets();
     }, []);
 
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchPets();
+        }, [])
+    );
+
+
     const fetchPets = async () => {
         try {
             setLoading(true);
-
             const user = await AsyncStorage.getItem("user");
-
-            if (!user) {
-                return;
-            }
+            if (!user) { return }
 
             const parsedUser = JSON.parse(user);
-
             const response = await getPetsByUserId(parsedUser.id);
-
             setPets(response.pets || []);
         } catch (error: any) {
-            console.log(error);
-
+            console.log("Fetch Pets Error:", error);
             Alert.alert(
                 "Error",
-                "Couldn't load pets."
+                error?.response?.data?.message || error.message
             );
+
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreatePet = async () => {
+    const handleSavePet = async (values: any) => {
         try {
-            if (!name || !type) {
-                Alert.alert("Error", "Name and Type are required");
-                return;
-            }
 
             setSaving(true);
 
-            const user = await AsyncStorage.getItem("user");
 
-            if (!user) return;
+            if (editingPet) {
 
-            const parsedUser = JSON.parse(user);
+                // UPDATE MODE
 
-            const response = await createPet({
-                userId: parsedUser.id,
-                name,
-                type,
-                breed,
-                age: Number(age),
-                gender,
-                weight: Number(weight),
-                healthInfo,
-                petImage,
-            });
+                const response = await updatePet(
+                    editingPet.id,
+                    {
+                        ...values,
+                        age: Number(values.age),
+                        weight: Number(values.weight),
+                    }
+                );
 
-            Alert.alert("Success", response.message);
+
+                Alert.alert(
+                    "Success",
+                    response.message
+                );
+
+
+            } else {
+
+
+                // CREATE MODE
+
+                const user = await AsyncStorage.getItem("user");
+
+                if (!user) return;
+
+                const parsedUser = JSON.parse(user);
+
+
+                const response = await createPet({
+
+                    userId: parsedUser.id,
+
+                    ...values,
+
+                    age: Number(values.age),
+
+                    weight: Number(values.weight),
+                });
+
+
+                Alert.alert(
+                    "Success",
+                    response.message
+                );
+            }
+
 
             setModalVisible(false);
 
-            setName("");
-            setType("");
-            setBreed("");
-            setAge("");
-            setGender("male");
-            setWeight("");
-            setHealthInfo("");
-            setPetImage("");
+            setEditingPet(null);
 
             fetchPets();
 
+
         } catch (error: any) {
+
             Alert.alert(
                 "Error",
                 error?.response?.data?.message ||
-                "Couldn't create pet."
+                "Something went wrong"
             );
+
         } finally {
+
             setSaving(false);
+
         }
-    };
+    }
 
     if (loading) {
         return (
@@ -188,7 +198,15 @@ export default function MyPetsScreen() {
                             <TouchableOpacity
                                 key={pet.id}
                                 style={styles.petCard}
-                                activeOpacity={0.7}
+                                activeOpacity={0.8}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/screen/pets/petProfile",
+                                        params: {
+                                            id: pet.id,
+                                        },
+                                    })
+                                }
                             >
                                 <Image
                                     source={
@@ -198,16 +216,30 @@ export default function MyPetsScreen() {
                                     }
                                     style={styles.avatar}
                                 />
+
                                 <View style={styles.info}>
                                     <Text style={styles.name}>{pet.name}</Text>
+
                                     <Text style={styles.breed}>
                                         {pet.type} • {pet.breed}
                                     </Text>
+
                                     <Text style={styles.meta}>
                                         {pet.age} Years • {pet.gender}
                                     </Text>
                                 </View>
-                                <ChevronRight size={20} color="#9CA3AF" />
+
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setEditingPet(pet);
+                                        setModalVisible(true);
+                                    }}
+                                >
+                                    <Pencil
+                                        size={18}
+                                        color="#6C5DD3"
+                                    />
+                                </TouchableOpacity>
                             </TouchableOpacity>
                         ))
                     )}
@@ -218,95 +250,102 @@ export default function MyPetsScreen() {
                 visible={modalVisible}
                 animationType="slide"
                 transparent
+                onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-
-                        <Text style={styles.modalTitle}>
-                            Add Pet
-                        </Text>
-
-                        <TextInput
-                            placeholder="Pet Name"
-                            style={styles.modalInput}
-                            value={name}
-                            onChangeText={setName}
+                <View
+                    style={{
+                        flex: 1,
+                        justifyContent: "flex-end",
+                        backgroundColor: "rgba(0,0,0,0.45)",
+                    }}
+                >
+                    <SafeAreaView
+                        style={{
+                            backgroundColor: "#fff",
+                            borderTopLeftRadius: 28,
+                            borderTopRightRadius: 28,
+                            maxHeight: "82%",
+                            overflow: "hidden",
+                        }}
+                    >
+                        {/* Handle */}
+                        <View
+                            style={{
+                                width: 45,
+                                height: 5,
+                                backgroundColor: "#D1D5DB",
+                                borderRadius: 999,
+                                alignSelf: "center",
+                                marginTop: 10,
+                                marginBottom: 10,
+                            }}
                         />
 
-                        <TextInput
-                            placeholder="Type (Dog, Cat...)"
-                            style={styles.modalInput}
-                            value={type}
-                            onChangeText={setType}
-                        />
-
-                        <TextInput
-                            placeholder="Breed"
-                            style={styles.modalInput}
-                            value={breed}
-                            onChangeText={setBreed}
-                        />
-
-                        <TextInput
-                            placeholder="Age"
-                            style={styles.modalInput}
-                            keyboardType="numeric"
-                            value={age}
-                            onChangeText={setAge}
-                        />
-
-                        <TextInput
-                            placeholder="Gender"
-                            style={styles.modalInput}
-                            value={gender}
-                            onChangeText={setGender}
-                        />
-
-                        <TextInput
-                            placeholder="Weight"
-                            style={styles.modalInput}
-                            keyboardType="numeric"
-                            value={weight}
-                            onChangeText={setWeight}
-                        />
-
-                        <TextInput
-                            placeholder="Health Info"
-                            style={styles.modalInput}
-                            value={healthInfo}
-                            onChangeText={setHealthInfo}
-                        />
-
-                        <TextInput
-                            placeholder="Image URL"
-                            style={styles.modalInput}
-                            value={petImage}
-                            onChangeText={setPetImage}
-                        />
-
-                        <TouchableOpacity
-                            style={styles.saveButton}
-                            onPress={handleCreatePet}
-                            disabled={saving}
+                        {/* Header */}
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingHorizontal: 20,
+                                paddingBottom: 15,
+                            }}
                         >
-                            {saving ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.saveText}>
-                                    Save Pet
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Text style={styles.cancelText}>
-                                Cancel
+                            <Text
+                                style={{
+                                    fontSize: 22,
+                                    fontWeight: "700",
+                                    color: "#111827",
+                                }}
+                            >
+                                {
+                                    editingPet
+                                        ? "Edit Pet Profile"
+                                        : "Add Pet"
+                                }
                             </Text>
-                        </TouchableOpacity>
 
-                    </View>
+                            <TouchableOpacity
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text
+                                    style={{
+                                        fontSize: 24,
+                                        color: "#6B7280",
+                                    }}
+                                >
+                                    ✕
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <PetForm
+                            buttonTitle={
+                                editingPet
+                                    ? "Update Pet"
+                                    : "Save Pet"
+                            }
+
+                            loading={saving}
+
+                            initialValues={
+                                editingPet
+                                    ? {
+                                        name: editingPet.name,
+                                        type: editingPet.type,
+                                        breed: editingPet.breed,
+                                        age: String(editingPet.age),
+                                        gender: editingPet.gender,
+                                        weight: String(editingPet.weight),
+                                        healthInfo: editingPet.healthInfo,
+                                        petImage: editingPet.petImage,
+                                    }
+                                    : undefined
+                            }
+
+                            onSubmit={handleSavePet}
+                        />
+                    </SafeAreaView>
                 </View>
             </Modal>
         </SafeAreaView>
@@ -351,6 +390,14 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingBottom: 100, // Extra space to clear the custom floating bottom navigation bar
     },
+    modalContainer: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        maxHeight: "80%",
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
     petCard: {
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
@@ -366,55 +413,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 2,
         elevation: 2,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        justifyContent: "flex-end",
-    },
-
-    modalContainer: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        padding: 24,
-    },
-
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: "700",
-        marginBottom: 20,
-    },
-
-    modalInput: {
-        borderWidth: 1,
-        borderColor: "#E5E7EB",
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        height: 50,
-        marginBottom: 14,
-    },
-
-    saveButton: {
-        backgroundColor: "#6C5DD3",
-        height: 54,
-        justifyContent: "center",
-        alignItems: "center",
-        borderRadius: 14,
-        marginTop: 10,
-    },
-
-    saveText: {
-        color: "#fff",
-        fontWeight: "700",
-        fontSize: 16,
-    },
-
-    cancelText: {
-        textAlign: "center",
-        marginTop: 16,
-        color: "#6C5DD3",
-        fontWeight: "600",
     },
     avatar: {
         width: 56,
