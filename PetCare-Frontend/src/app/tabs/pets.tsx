@@ -15,7 +15,6 @@ export default function MyPetsScreen() {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [saving, setSaving] = useState(false);
-
     const [editingPet, setEditingPet] = useState<any>(null);
 
     useEffect(() => {
