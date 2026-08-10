@@ -1,5 +1,5 @@
 import express from "express";
-import { createVaccination, getAllVaccinations, getVaccinationById, getVaccinationsByPetId, getVaccinationHistory, getUpcomingDueVaccinations, updateVaccination, deleteVaccination } from "../controllers/vaccination.controller.js";
+import { createVaccination, getAllVaccinations, getVaccinationById, getVaccinationsByPetId, getVaccinationHistory, getUpcomingDueVaccinations, updateVaccination, deleteVaccination, getVaccinationsByUserId } from "../controllers/vaccination.controller.js";
 
 const router = express.Router();
 
@@ -8,6 +8,7 @@ router.put("/:id", updateVaccination);
 router.delete("/:id", deleteVaccination);
 router.get("/", getAllVaccinations);
 router.get("/pet/:petId", getVaccinationsByPetId);
+router.get("/user/:userId", getVaccinationsByUserId);
 router.get("/history/:petId", getVaccinationHistory);
 router.get("/due", getUpcomingDueVaccinations);
 router.get("/:id", getVaccinationById);

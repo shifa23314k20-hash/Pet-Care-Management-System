@@ -5,6 +5,7 @@ export const createVaccination = async (req, res) => {
   try {
     const {
       petId,
+      userId,
       vaccineName,
       dateGiven,
       nextDueDate,
@@ -36,6 +37,7 @@ export const createVaccination = async (req, res) => {
     const vaccination = await Vaccination.create({
       id: uuidv4(),
       petId,
+      userId,
       vaccineName,
       dateGiven,
       nextDueDate: nextDueDate || null,
@@ -136,7 +138,7 @@ export const getVaccinationById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const vaccination = await Vaccination.findOne({ id });
+    const vaccination = await Vaccination.find({ id });
 
     if (!vaccination) {
       return res.status(404).json({
@@ -162,7 +164,30 @@ export const getVaccinationsByPetId = async (req, res) => {
   try {
     const { petId } = req.params;
 
-    const vaccinations = await Vaccination.findOne({ petId }).sort({
+    const vaccinations = await Vaccination.find({ petId }).sort({
+      dateGiven: -1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: vaccinations.length,
+      vaccinations,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pet vaccination records",
+      error: error.message,
+    });
+  }
+};
+
+export const getVaccinationsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const vaccinations = await Vaccination.find({ userId }).sort({
       dateGiven: -1,
       createdAt: -1,
     });
