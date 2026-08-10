@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
+import { router } from "expo-router";
 import {
   Bell,
   Sparkles,
@@ -26,13 +27,13 @@ export default function Dashboard() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        
+
         {/* Scrollable Content Area */}
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          
+
           {/* Top Header */}
           <View style={styles.header}>
             <View>
@@ -71,11 +72,15 @@ export default function Dashboard() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Today's Overview</Text>
             <View style={styles.overviewGrid}>
-              
-              <View style={styles.overviewCard}>
+
+              <TouchableOpacity
+                style={styles.overviewCard}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/screen/vaccination/vaccinationManagement")}
+              >
                 <Text style={styles.overviewNumber}>2</Text>
                 <Text style={styles.overviewLabel}>Upcoming Vaccines</Text>
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.overviewCard}>
                 <Text style={styles.overviewNumber}>1</Text>
@@ -117,7 +122,7 @@ export default function Dashboard() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Quick Access</Text>
             <View style={styles.quickAccessGrid}>
-              
+
               <TouchableOpacity style={styles.quickAccessItem} activeOpacity={0.7}>
                 <View style={styles.quickIconBox}>
                   <PlusCircle size={22} color="#6C5DD3" />

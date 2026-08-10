@@ -18,7 +18,7 @@ interface Pet {
     petImage?: string;
 }
 
-const PLACEHOLDER = require("../../../../assets/images/dummy-pic.jpg");
+const PLACEHOLDER = require("../../../../../assets/images/dummy-pic.jpg");
 
 export default function PetProfile() {
     const { id } = useLocalSearchParams();
@@ -305,7 +305,7 @@ export default function PetProfile() {
                             style={styles.actionCard}
                             onPress={() =>
                                 router.push({
-                                    pathname: "/screen/health-record",
+                                    pathname: "/tabs/screen/health-record",
                                     params: { petId: pet.id },
                                 })
                             }
@@ -325,7 +325,7 @@ export default function PetProfile() {
                             style={styles.actionCard}
                             onPress={() =>
                                 router.push({
-                                    pathname: "/screen/vaccination",
+                                    pathname: "/tabs/screen/vaccination",
                                     params: { petId: pet.id },
                                 })
                             }
@@ -345,7 +345,7 @@ export default function PetProfile() {
                             style={styles.actionCard}
                             onPress={() =>
                                 router.push({
-                                    pathname: "/screen/appointments",
+                                    pathname: "/tabs/screen/appointments",
                                     params: { petId: pet.id },
                                 })
                             }
@@ -365,7 +365,7 @@ export default function PetProfile() {
                             style={styles.actionCard}
                             onPress={() =>
                                 router.push({
-                                    pathname: "/screen/gallery",
+                                    pathname: "/tabs/screen/gallery",
                                     params: { petId: pet.id },
                                 })
                             }

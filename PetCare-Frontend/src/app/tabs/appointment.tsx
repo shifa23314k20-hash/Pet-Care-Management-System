@@ -34,6 +34,7 @@ export default function CalendarScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  
   const fetchAppointments = async () => {
     try {
       setLoading(true);
@@ -78,7 +79,7 @@ export default function CalendarScreen() {
       date.setHours(0, 0, 0, 0);
 
       console.log("Appointments:", appointments);
-      console.log("Filtered:", filteredAppointments);
+      // console.log("Filtered:", filteredAppointments);
 
       return tab === "Upcoming"
         ? date >= today
@@ -91,7 +92,7 @@ export default function CalendarScreen() {
     activeOpacity={0.8}
     onPress={() =>
       router.push({
-        pathname: "/screen/appoinment/appointmentDetails",
+        pathname: "/tabs/screen/appoinment/appointmentDetails",
         params: {
           id: item.id,
         },

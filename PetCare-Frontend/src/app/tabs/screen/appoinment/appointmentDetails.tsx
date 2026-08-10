@@ -186,7 +186,7 @@ export default function AppointmentDetailsScreen() {
                         source={
                             pet?.petImage
                                 ? { uri: pet.petImage }
-                                : require("../../../../assets/images/dummy-pic.jpg")
+                                : require("../../../../../assets/images/dummy-pic.jpg")
                         }
                         style={styles.avatar}
                     />

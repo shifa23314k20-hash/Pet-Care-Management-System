@@ -200,7 +200,7 @@ export default function MyPetsScreen() {
                                 activeOpacity={0.8}
                                 onPress={() =>
                                     router.push({
-                                        pathname: "/screen/pets/petProfile",
+                                        pathname: "/tabs/screen/pets/petProfile",
                                         params: {
                                             id: pet.id,
                                         },

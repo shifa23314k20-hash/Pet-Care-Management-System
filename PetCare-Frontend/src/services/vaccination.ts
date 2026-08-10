@@ -25,6 +25,11 @@ export const getVaccinationsByPetId = async (petId: string) => {
   return response.data;
 };
 
+export const getVaccinationsByUserId = async (userId: string) => {
+  const response = await api.get(`/vaccination/user/${userId}`);
+  return response.data;
+};
+
 export const getVaccinationHistory = async (petId: string) => {
   const response = await api.get(`/vaccination/history/${petId}`);
   return response.data;

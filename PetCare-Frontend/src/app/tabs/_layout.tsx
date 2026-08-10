@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Heart, Calendar, User, PlusCircle } from 'lucide-react-native';
+import { Home, PawPrintIcon, Calendar, User, PlusCircle } from 'lucide-react-native';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 
 export default function TabLayout() {
@@ -25,7 +25,7 @@ export default function TabLayout() {
                 name="pets"
                 options={{
                     title: 'My Pets',
-                    tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
+                    tabBarIcon: ({ color, size }) => <PawPrintIcon size={size} color={color} />,
                 }}
             />
 
@@ -65,7 +65,15 @@ export default function TabLayout() {
                     tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
                 }}
             />
+            <Tabs.Screen
+                name="screen"
+                options={{
+                    href: null,
+                    headerShown: false,
+                }}
+            />
         </Tabs>
+
     );
 }
 
