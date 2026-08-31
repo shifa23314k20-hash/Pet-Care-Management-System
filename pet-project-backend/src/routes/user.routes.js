@@ -1,6 +1,7 @@
 import express from "express";
 
 import { getAllUsers, getUserById, updateUser, deleteUser } from "../controllers/user.controller.js";
+import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
 router.put("/:id", updateUser);
 router.delete("/:id", deleteUser);
 router.get("/", getAllUsers);
-router.get("/:id", getUserById);
+router.get("/:id", authMiddleware, getUserById);
 
 
 export default router;

@@ -1,10 +1,15 @@
 import Activity from "../model/activity.model.js";
+import Pet from "../model/pet.model.js";
 import { v4 as uuidv4 } from "uuid";
 
+// =========================
+// CREATE ACTIVITY
+// =========================
 export const createActivity = async (req, res) => {
   try {
+    const userId = req.user.userId;
+
     const {
-      userId,
       petId,
       date,
       walkDuration,
@@ -14,7 +19,6 @@ export const createActivity = async (req, res) => {
     } = req.body;
 
     if (
-      !userId ||
       !petId ||
       walkDuration === undefined ||
       playTime === undefined ||
@@ -23,7 +27,28 @@ export const createActivity = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "userId, petId, walkDuration, playTime and sleepHours are required",
+          "petId, walkDuration, playTime and sleepHours are required",
+      });
+    }
+
+    // Verify pet ownership
+    const pet = await Pet.findOne({
+      id: petId,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Pet not found or you do not have access to this pet",
+      });
+    }
+
+    if (date && isNaN(new Date(date).getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
       });
     }
 
@@ -38,163 +63,236 @@ export const createActivity = async (req, res) => {
       notes: notes?.trim() || "",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Activity created successfully",
       activity,
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("CREATE ACTIVITY ERROR:", error);
+
+    return res.status(500).json({
       success: false,
       message: "Failed to create activity",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// UPDATE ACTIVITY
+// =========================
 export const updateActivity = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const activity = await Activity.findOneAndUpdate(
-      { id },
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const {
+      date,
+      walkDuration,
+      playTime,
+      sleepHours,
+      notes,
+    } = req.body;
+
+    const activity = await Activity.findOne({
+      id,
+      userId,
+    });
 
     if (!activity) {
       return res.status(404).json({
         success: false,
-        message: "Activity not found",
+        message:
+          "Activity not found or you do not have access to it",
       });
     }
 
-    res.status(200).json({
+    if (
+      date &&
+      isNaN(new Date(date).getTime())
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
+      });
+    }
+
+    activity.date = date ?? activity.date;
+
+    activity.walkDuration =
+      walkDuration ?? activity.walkDuration;
+
+    activity.playTime =
+      playTime ?? activity.playTime;
+
+    activity.sleepHours =
+      sleepHours ?? activity.sleepHours;
+
+    activity.notes =
+      notes?.trim() ?? activity.notes;
+
+    await activity.save();
+
+    return res.status(200).json({
       success: true,
       message: "Activity updated successfully",
       activity,
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("UPDATE ACTIVITY ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to update activity",
     });
   }
 };
 
+
+// =========================
+// DELETE ACTIVITY
+// =========================
 export const deleteActivity = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const activity = await Activity.findOneAndDelete({ id });
+    const activity = await Activity.findOneAndDelete({
+      id,
+      userId,
+    });
 
     if (!activity) {
       return res.status(404).json({
         success: false,
-        message: "Activity not found",
+        message:
+          "Activity not found or you do not have access to it",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Activity deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("DELETE ACTIVITY ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to delete activity",
     });
   }
 };
 
+
+// =========================
+// GET MY ACTIVITIES
+// =========================
 export const getAllActivities = async (req, res) => {
   try {
-    const activities = await Activity.find().sort({
+    const userId = req.user.userId;
+
+    const activities = await Activity.find({
+      userId,
+    }).sort({
       date: -1,
       createdAt: -1,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: activities.length,
       activities,
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("GET ACTIVITIES ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch activities",
     });
   }
 };
 
+
+// =========================
+// GET ACTIVITY BY ID
+// =========================
 export const getActivityById = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const activity = await Activity.findOne({ id });
+    const activity = await Activity.findOne({
+      id,
+      userId,
+    });
 
     if (!activity) {
       return res.status(404).json({
         success: false,
-        message: "Activity not found",
+        message:
+          "Activity not found or you do not have access to it",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       activity,
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("GET ACTIVITY ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch activity",
     });
   }
 };
 
-export const getActivitiesByUserId = async (req, res) => {
-  try {
-    const { userId } = req.params;
 
-    const activities = await Activity.find({ userId }).sort({
-      date: -1,
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      count: activities.length,
-      activities,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
+// =========================
+// GET ACTIVITIES BY PET
+// =========================
 export const getActivitiesByPetId = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { petId } = req.params;
 
-    const activities = await Activity.find({ petId }).sort({
+    // Verify pet ownership
+    const pet = await Pet.findOne({
+      id: petId,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Pet not found or you do not have access to this pet",
+      });
+    }
+
+    const activities = await Activity.find({
+      petId,
+      userId,
+    }).sort({
       date: -1,
       createdAt: -1,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: activities.length,
       activities,
     });
   } catch (error) {
-    res.status(500).json({
+    console.log("GET PET ACTIVITIES ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch pet activities",
     });
   }
 };

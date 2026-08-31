@@ -1,14 +1,23 @@
 import express from "express";
-import { createAppointment, getAllAppointments, getAppointmentById, getAppointmentsByUserId, getAppointmentsByPetId, updateAppointment, deleteAppointment } from "../controllers/appointment.controller.js";
+
+import {
+  createAppointment,
+  getAllAppointments,
+  getAppointmentById,
+  getAppointmentsByPetId,
+  updateAppointment,
+  deleteAppointment,
+} from "../controllers/appointment.controller.js";
+
+import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createAppointment);
-router.get("/", getAllAppointments);
-router.get("/:id", getAppointmentById);
-router.get("/user/:userId", getAppointmentsByUserId);
-router.get("/pet/:petId", getAppointmentsByPetId);
-router.put("/:id", updateAppointment);
-router.delete("/:id", deleteAppointment);
+router.post("/", authMiddleware, createAppointment);
+router.get("/", authMiddleware, getAllAppointments);
+router.get("/pet/:petId", authMiddleware, getAppointmentsByPetId);
+router.get("/:id", authMiddleware, getAppointmentById);
+router.put("/:id", authMiddleware, updateAppointment);
+router.delete("/:id", authMiddleware, deleteAppointment);
 
 export default router;

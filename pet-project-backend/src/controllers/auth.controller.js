@@ -1,11 +1,22 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import User from "../model/user.model.js";
 import { v4 as uuidv4 } from "uuid";
 
-
+// =========================
+// REGISTER
+// =========================
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, profileImage, bio, location } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      profileImage,
+      bio,
+      location,
+    } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -15,6 +26,7 @@ export const register = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -35,8 +47,9 @@ export const register = async (req, res) => {
       location: location || "",
     });
 
-    const safeUser = await User.findById(user._id).select("-password");
-
+    const safeUser = await User.findOne({ id: user.id }).select(
+      "-password -otp -otpExpiry"
+    );
     res.status(201).json({
       success: true,
       message: "Account created",
@@ -51,14 +64,25 @@ export const register = async (req, res) => {
   }
 };
 
+
+// =========================
+// LOGIN
+// =========================
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
@@ -67,17 +91,31 @@ export const login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
-    const safeUser = await User.findById(user._id).select("-password");
+    // Generate JWT
+    const token = jwt.sign(
+      {
+        userId: user.id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
 
-    res.json({
+    const safeUser = await User.findOne({ id: user.id }).select(
+      "-password -otp -otpExpiry"
+    );
+
+    res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       user: safeUser,
     });
 
@@ -89,6 +127,10 @@ export const login = async (req, res) => {
   }
 };
 
+
+// =========================
+// FORGOT PASSWORD
+// =========================
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -109,17 +151,23 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
 
     user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.otpExpiry = new Date(
+      Date.now() + 10 * 60 * 1000
+    );
 
     await user.save();
 
+    // TEMPORARY FOR DEVELOPMENT
+    // In production, send OTP through email/SMS.
     res.status(200).json({
       success: true,
       message: "OTP generated successfully",
-      otp, 
+      otp,
     });
 
   } catch (error) {
@@ -130,9 +178,17 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
+
+// =========================
+// RESET PASSWORD
+// =========================
 export const resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    const {
+      email,
+      otp,
+      newPassword,
+    } = req.body;
 
     if (!email || !otp || !newPassword) {
       return res.status(400).json({
@@ -161,7 +217,10 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      10
+    );
 
     user.password = hashedPassword;
     user.otp = "";
@@ -182,12 +241,17 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+
+// =========================
+// LOGOUT
+// =========================
 export const logout = async (req, res) => {
   try {
     res.status(200).json({
       success: true,
       message: "Logout successful",
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,

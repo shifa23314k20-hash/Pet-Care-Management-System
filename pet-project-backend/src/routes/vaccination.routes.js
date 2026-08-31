@@ -1,16 +1,27 @@
 import express from "express";
-import { createVaccination, getAllVaccinations, getVaccinationById, getVaccinationsByPetId, getVaccinationHistory, getUpcomingDueVaccinations, updateVaccination, deleteVaccination, getVaccinationsByUserId } from "../controllers/vaccination.controller.js";
+
+import {
+  createVaccination,
+  getAllVaccinations,
+  getVaccinationById,
+  getVaccinationsByPetId,
+  getVaccinationHistory,
+  getUpcomingDueVaccinations,
+  updateVaccination,
+  deleteVaccination,
+} from "../controllers/vaccination.controller.js";
+
+import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createVaccination);
-router.put("/:id", updateVaccination);
-router.delete("/:id", deleteVaccination);
-router.get("/", getAllVaccinations);
-router.get("/pet/:petId", getVaccinationsByPetId);
-router.get("/user/:userId", getVaccinationsByUserId);
-router.get("/history/:petId", getVaccinationHistory);
-router.get("/due", getUpcomingDueVaccinations);
-router.get("/:id", getVaccinationById);
+router.post("/", authMiddleware, createVaccination);
+router.get("/", authMiddleware, getAllVaccinations);
+router.get("/pet/:petId", authMiddleware, getVaccinationsByPetId);
+router.get("/history/:petId", authMiddleware, getVaccinationHistory);
+router.get("/due", authMiddleware, getUpcomingDueVaccinations);
+router.get("/:id", authMiddleware, getVaccinationById);
+router.put("/:id", authMiddleware, updateVaccination);
+router.delete("/:id", authMiddleware, deleteVaccination);
 
 export default router;

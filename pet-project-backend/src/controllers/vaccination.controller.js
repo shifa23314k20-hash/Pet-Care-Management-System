@@ -1,11 +1,16 @@
 import Vaccination from "../model/vaccination.model.js";
+import Pet from "../model/pet.model.js";
 import { v4 as uuidv4 } from "uuid";
 
+// =========================
+// CREATE VACCINATION
+// =========================
 export const createVaccination = async (req, res) => {
   try {
+    const userId = req.user.userId;
+
     const {
       petId,
-      userId,
       vaccineName,
       dateGiven,
       nextDueDate,
@@ -20,6 +25,19 @@ export const createVaccination = async (req, res) => {
       });
     }
 
+    // Verify that the pet belongs to the logged-in user
+    const pet = await Pet.findOne({
+      id: petId,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet not found or you do not have access to this pet",
+      });
+    }
+
     if (isNaN(new Date(dateGiven).getTime())) {
       return res.status(400).json({
         success: false,
@@ -27,7 +45,10 @@ export const createVaccination = async (req, res) => {
       });
     }
 
-    if (nextDueDate && isNaN(new Date(nextDueDate).getTime())) {
+    if (
+      nextDueDate &&
+      isNaN(new Date(nextDueDate).getTime())
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid nextDueDate format",
@@ -51,55 +72,118 @@ export const createVaccination = async (req, res) => {
       vaccination,
     });
   } catch (error) {
+    console.log("CREATE VACCINATION ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to create vaccination record",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// UPDATE VACCINATION
+// =========================
 export const updateVaccination = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const updatedVaccination = await Vaccination.findOneAndUpdate(
-      { id },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const {
+      vaccineName,
+      dateGiven,
+      nextDueDate,
+      notes,
+      reminderEnabled,
+    } = req.body;
 
-    if (!updatedVaccination) {
+    const vaccination = await Vaccination.findOne({
+      id,
+      userId,
+    });
+
+    if (!vaccination) {
       return res.status(404).json({
         success: false,
-        message: "Vaccination record not found",
+        message:
+          "Vaccination record not found or you do not have access to it",
       });
     }
+
+    if (
+      dateGiven &&
+      isNaN(new Date(dateGiven).getTime())
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid dateGiven format",
+      });
+    }
+
+    if (
+      nextDueDate &&
+      isNaN(new Date(nextDueDate).getTime())
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid nextDueDate format",
+      });
+    }
+
+    vaccination.vaccineName =
+      vaccineName ?? vaccination.vaccineName;
+
+    vaccination.dateGiven =
+      dateGiven ?? vaccination.dateGiven;
+
+    vaccination.nextDueDate =
+      nextDueDate !== undefined
+        ? nextDueDate || null
+        : vaccination.nextDueDate;
+
+    vaccination.notes =
+      notes ?? vaccination.notes;
+
+    vaccination.reminderEnabled =
+      reminderEnabled ?? vaccination.reminderEnabled;
+
+    await vaccination.save();
 
     return res.status(200).json({
       success: true,
       message: "Vaccination record updated successfully",
-      vaccination: updatedVaccination,
+      vaccination,
     });
   } catch (error) {
+    console.log("UPDATE VACCINATION ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to update vaccination record",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// DELETE VACCINATION
+// =========================
 export const deleteVaccination = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const deletedVaccination = await Vaccination.findOneAndDelete({ id });
+    const vaccination = await Vaccination.findOneAndDelete({
+      id,
+      userId,
+    });
 
-    if (!deletedVaccination) {
+    if (!vaccination) {
       return res.status(404).json({
         success: false,
-        message: "Vaccination record not found",
+        message:
+          "Vaccination record not found or you do not have access to it",
       });
     }
 
@@ -108,17 +192,29 @@ export const deleteVaccination = async (req, res) => {
       message: "Vaccination record deleted successfully",
     });
   } catch (error) {
+    console.log("DELETE VACCINATION ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to delete vaccination record",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// GET MY VACCINATIONS
+// =========================
 export const getAllVaccinations = async (req, res) => {
   try {
-    const vaccinations = await Vaccination.find().sort({ dateGiven: -1, createdAt: -1 });
+    const userId = req.user.userId;
+
+    const vaccinations = await Vaccination.find({
+      userId,
+    }).sort({
+      dateGiven: -1,
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
@@ -126,24 +222,34 @@ export const getAllVaccinations = async (req, res) => {
       vaccinations,
     });
   } catch (error) {
+    console.log("GET VACCINATIONS ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch vaccination records",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// GET VACCINATION BY ID
+// =========================
 export const getVaccinationById = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
 
-    const vaccination = await Vaccination.find({ id });
+    const vaccination = await Vaccination.findOne({
+      id,
+      userId,
+    });
 
     if (!vaccination) {
       return res.status(404).json({
         success: false,
-        message: "Vaccination record not found",
+        message:
+          "Vaccination record not found or you do not have access to it",
       });
     }
 
@@ -152,19 +258,41 @@ export const getVaccinationById = async (req, res) => {
       vaccination,
     });
   } catch (error) {
+    console.log("GET VACCINATION BY ID ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch vaccination record",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// GET VACCINATIONS BY PET
+// =========================
 export const getVaccinationsByPetId = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { petId } = req.params;
 
-    const vaccinations = await Vaccination.find({ petId }).sort({
+    // Verify pet ownership
+    const pet = await Pet.findOne({
+      id: petId,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet not found or you do not have access to this pet",
+      });
+    }
+
+    const vaccinations = await Vaccination.find({
+      petId,
+      userId,
+    }).sort({
       dateGiven: -1,
       createdAt: -1,
     });
@@ -175,42 +303,40 @@ export const getVaccinationsByPetId = async (req, res) => {
       vaccinations,
     });
   } catch (error) {
+    console.log("GET PET VACCINATIONS ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch pet vaccination records",
-      error: error.message,
     });
   }
 };
 
-export const getVaccinationsByUserId = async (req, res) => {
-  try {
-    const { userId } = req.params;
 
-    const vaccinations = await Vaccination.find({ userId }).sort({
-      dateGiven: -1,
-      createdAt: -1,
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: vaccinations.length,
-      vaccinations,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch pet vaccination records",
-      error: error.message,
-    });
-  }
-};
-
+// =========================
+// GET VACCINATION HISTORY
+// =========================
 export const getVaccinationHistory = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { petId } = req.params;
 
-    const history = await Vaccination.find({ petId }).sort({
+    const pet = await Pet.findOne({
+      id: petId,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet not found or you do not have access to this pet",
+      });
+    }
+
+    const history = await Vaccination.find({
+      petId,
+      userId,
+    }).sort({
       dateGiven: -1,
       createdAt: -1,
     });
@@ -221,20 +347,31 @@ export const getVaccinationHistory = async (req, res) => {
       history,
     });
   } catch (error) {
+    console.log("GET VACCINATION HISTORY ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch vaccination history",
-      error: error.message,
     });
   }
 };
 
+
+// =========================
+// GET UPCOMING DUE VACCINATIONS
+// =========================
 export const getUpcomingDueVaccinations = async (req, res) => {
   try {
+    const userId = req.user.userId;
+
     const today = new Date();
 
     const vaccinations = await Vaccination.find({
-      nextDueDate: { $ne: null, $gte: today },
+      userId,
+      nextDueDate: {
+        $ne: null,
+        $gte: today,
+      },
       reminderEnabled: true,
     }).sort({
       nextDueDate: 1,
@@ -247,11 +384,11 @@ export const getUpcomingDueVaccinations = async (req, res) => {
       vaccinations,
     });
   } catch (error) {
+    console.log("GET DUE VACCINATIONS ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch upcoming due vaccinations",
-      error: error.message,
     });
   }
 };
-

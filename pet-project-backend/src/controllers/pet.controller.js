@@ -1,14 +1,28 @@
 import Pet from "../model/pet.model.js";
 import { v4 as uuidv4 } from "uuid";
 
+// =========================
+// CREATE PET
+// =========================
 export const createPet = async (req, res) => {
   try {
-    const { userId, name, type, breed, age, gender, weight, healthInfo, petImage } = req.body;
+    const userId = req.user.userId;
 
-    if (!userId || !name || !type) {
+    const {
+      name,
+      type,
+      breed,
+      age,
+      gender,
+      weight,
+      healthInfo,
+      petImage,
+    } = req.body;
+
+    if (!name || !type) {
       return res.status(400).json({
         success: false,
-        message: "userId, name and type are required",
+        message: "Name and type are required",
       });
     }
 
@@ -18,9 +32,9 @@ export const createPet = async (req, res) => {
       name,
       type,
       breed: breed || "",
-      age: age || 0,
+      age: age ?? 0,
       gender: gender || "male",
-      weight: weight || 0,
+      weight: weight ?? 0,
       healthInfo: healthInfo || "",
       petImage: petImage || "",
     });
@@ -32,6 +46,7 @@ export const createPet = async (req, res) => {
     });
   } catch (error) {
     console.log("CREATE PET ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -39,18 +54,33 @@ export const createPet = async (req, res) => {
   }
 };
 
+
+// =========================
+// UPDATE PET
+// =========================
 export const updatePet = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
-    const pet = await Pet.findOneAndUpdate({id}, req.body, {
-      new: true,
-      runValidators: true,
-    });
+
+    const pet = await Pet.findOneAndUpdate(
+      {
+        id,
+        userId,
+      },
+      {
+        $set: req.body,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!pet) {
       return res.status(404).json({
         success: false,
-        message: "Pet not found",
+        message: "Pet not found or you do not have access to this pet",
       });
     }
 
@@ -61,6 +91,7 @@ export const updatePet = async (req, res) => {
     });
   } catch (error) {
     console.log("UPDATE PET ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -68,10 +99,26 @@ export const updatePet = async (req, res) => {
   }
 };
 
+
+// =========================
+// DELETE PET
+// =========================
 export const deletePet = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
-    const pet = await Pet.findOneAndDelete({id});
+
+    const pet = await Pet.findOneAndDelete({
+      id,
+      userId,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet not found or you do not have access to this pet",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -79,6 +126,7 @@ export const deletePet = async (req, res) => {
     });
   } catch (error) {
     console.log("DELETE PET ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -86,16 +134,23 @@ export const deletePet = async (req, res) => {
   }
 };
 
+
+// =========================
+// GET ALL PETS
+// =========================
 export const getAllPets = async (req, res) => {
   try {
-    const pets = await Pet.find();
+    const userId = req.user.userId;
+
+    const pets = await Pet.find({ userId });
 
     res.status(200).json({
       success: true,
       pets,
     });
   } catch (error) {
-    console.log("GET ALL PETS ERROR:", error);
+    console.log("GET PETS ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -103,15 +158,24 @@ export const getAllPets = async (req, res) => {
   }
 };
 
+
+// =========================
+// GET PET BY ID
+// =========================
 export const getPetById = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
-    const pet = await Pet.findOne({id});
+
+    const pet = await Pet.findOne({
+      id,
+      userId,
+    });
 
     if (!pet) {
       return res.status(404).json({
         success: false,
-        message: "Pet not found",
+        message: "Pet not found or you do not have access to this pet",
       });
     }
 
@@ -121,6 +185,7 @@ export const getPetById = async (req, res) => {
     });
   } catch (error) {
     console.log("GET PET BY ID ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -128,9 +193,14 @@ export const getPetById = async (req, res) => {
   }
 };
 
+
+// =========================
+// GET MY PETS
+// =========================
 export const getPetsByUserId = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.userId;
+
     const pets = await Pet.find({ userId });
 
     res.status(200).json({
@@ -138,7 +208,8 @@ export const getPetsByUserId = async (req, res) => {
       pets,
     });
   } catch (error) {
-    console.log("GET PETS BY USER ERROR:", error);
+    console.log("GET MY PETS ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,

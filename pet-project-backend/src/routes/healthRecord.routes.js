@@ -1,13 +1,22 @@
 import express from "express";
-import { createHealthRecord, deleteHealthRecord, getAllHealthRecords, getHealthRecordById, getHealthRecordsByPetName, updateHealthRecord } from "../controllers/healthRecord.controller.js";
+
+import {
+  createHealthRecord,
+  deleteHealthRecord,
+  getAllHealthRecords,
+  getHealthRecordById,
+  getHealthRecordsByPetId,
+  updateHealthRecord,
+} from "../controllers/healthRecord.controller.js";
+
+import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createHealthRecord);
-router.get("/", getAllHealthRecords);
-router.get("/pet/:petName", getHealthRecordsByPetName);
-router.get("/:id", getHealthRecordById);
-router.put("/:id", updateHealthRecord);
-router.delete("/:id", deleteHealthRecord);
-
+router.post("/", authMiddleware, createHealthRecord);
+router.get("/", authMiddleware, getAllHealthRecords);
+router.get("/pet/:petId",authMiddleware, getHealthRecordsByPetId);
+router.get("/:id", authMiddleware, getHealthRecordById);
+router.put("/:id", authMiddleware, updateHealthRecord);
+router.delete("/:id", authMiddleware, deleteHealthRecord);
 export default router;
