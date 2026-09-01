@@ -79,7 +79,11 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (!user) {
       return res.status(401).json({
@@ -88,7 +92,10 @@ export const login = async (req, res) => {
       });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!match) {
       return res.status(401).json({
@@ -97,7 +104,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       {
         userId: user.id,
@@ -108,11 +114,11 @@ export const login = async (req, res) => {
       }
     );
 
-    const safeUser = await User.findOne({ id: user.id }).select(
-      "-password -otp -otpExpiry"
-    );
+    const safeUser = await User.findOne({
+      id: user.id,
+    }).select("-password -otp -otpExpiry");
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
       token,
@@ -120,7 +126,9 @@ export const login = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error("LOGIN ERROR:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
