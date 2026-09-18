@@ -312,6 +312,34 @@ export const getVaccinationsByPetId = async (req, res) => {
   }
 };
 
+export const getVaccinationsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const vaccinations = await Vaccination.find({
+      userId,
+    }).sort({
+      dateGiven: -1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: vaccinations.length,
+      vaccinations,
+    });
+  } catch (error) {
+    console.log("GET USER VACCINATIONS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user vaccination records",
+    });
+  }
+};
+    
+
+
 
 // =========================
 // GET VACCINATION HISTORY

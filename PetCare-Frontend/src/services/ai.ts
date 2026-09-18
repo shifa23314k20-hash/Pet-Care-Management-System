@@ -21,6 +21,8 @@ export const vaccinationAssistant = async (data: any) => {
 };
 
 export const generateHealthReport = async (data: any) => {
-  const response = await api.post("/ai/health-report", data);
+  const response = await api.post("/ai/health-report", data, {
+    responseType: "blob",
+  });
   return response.data;
 };

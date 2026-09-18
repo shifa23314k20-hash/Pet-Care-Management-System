@@ -1,404 +1,1063 @@
-import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import {
   Bell,
-  Sparkles,
-  PlusCircle,
-  Calendar,
-  FileText,
   Bot,
-  Home,
-  Heart,
-  Activity,
-  User,
+  BookOpen,
+  Calendar,
   ChevronRight,
-} from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
+  FileText,
+  HeartPulse,
+  Plus,
+  Sparkles,
+  Syringe,
+} from "lucide-react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getDashboard } from "@/services/dashboard";
+import { getPetsByUserId } from "@/services/pet";
+const PURPLE = "#6C5DD3";
 export default function Dashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [pets, setPets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const loadDashboard = async () => {
+    try {
+      setError("");
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) {
+        router.replace("/auth/login");
+        return;
+      }
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      const [dashboardResponse, petsResponse] = await Promise.all([
+        getDashboard(),
+        getPetsByUserId(),
+      ]);
+      console.log("Dashboard:", dashboardResponse);
+      console.log("Pets:", petsResponse);
+      if (dashboardResponse?.success) {
+        setDashboard(dashboardResponse.dashboard);
+      }
+      if (Array.isArray(petsResponse)) {
+        setPets(petsResponse);
+      } else if (Array.isArray(petsResponse?.pets)) {
+        setPets(petsResponse.pets);
+      } else if (Array.isArray(petsResponse?.data)) {
+        setPets(petsResponse.data);
+      } else {
+        setPets([]);
+      }
+    } catch (err: any) {
+      console.log("DASHBOARD FRONTEND ERROR:", err);
+      if (err?.response?.status === 401) {
+        await AsyncStorage.removeItem("token");
+        await AsyncStorage.removeItem("user");
+        router.replace("/auth/login");
+        return;
+      }
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load dashboard"
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadDashboard();
+  }, []);
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 17) return "afternoon";
+    return "evening";
+  };
+  const getPetAge = (pet: any) => {
+    if (!pet) return "";
+    if (pet.age !== undefined && pet.age !== null && pet.age !== "") {
+      return `${pet.age} Years`;
+    }
+    if (pet.dateOfBirth) {
+      const birthDate = new Date(pet.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDifference = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      return `${Math.max(age, 0)} Years`;
+    }
+    return "";
+  };
+  const getPetImage = (pet: any) => {
+    if (pet?.image?.url) return pet.image.url;
+    if (pet?.profileImage) return pet.profileImage;
+    if (typeof pet?.image === "string") return pet.image;
+    return null;
+  };
+  const getPetId = (pet: any) => {
+    if (!pet) return null;
+    return pet.petId || pet.id || pet._id;
+  };
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingIcon}>
+            <Sparkles size={25} color={PURPLE} />
+          </View>
+          <ActivityIndicator size="small" color={PURPLE} />
+          <Text style={styles.loadingText}>Preparing your dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  const firstPet = pets.length > 0 ? pets[0] : null;
+  const upcomingVaccinations =
+    dashboard?.upcomingVaccinations?.length || 0;
+  const upcomingAppointments =
+    dashboard?.upcomingAppointments?.length || 0;
+  const totalHealthRecords =
+    dashboard?.healthHighlights?.totalHealthRecords || 0;
+  const petImage = getPetImage(firstPet);
+  const upcomingVaccine =
+    dashboard?.upcomingVaccinations?.[0] || null;
+  const upcomingAppointment =
+    dashboard?.upcomingAppointments?.[0] || null;
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-
-        {/* Scrollable Content Area */}
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          style={styles.dashboardScroll}
           contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={PURPLE}
+            />
+          }
         >
-
-          {/* Top Header */}
           <View style={styles.header}>
-            <View>
+            <View style={styles.headerTextContainer}>
               <View style={styles.welcomeRow}>
-                <Text style={styles.welcomeText}>Hi, Mahak</Text>
+                <Text style={styles.welcomeText}>
+                  Hi, {user?.name || "Pet Parent"}
+                </Text>
                 <Text style={styles.waveEmoji}>👋</Text>
               </View>
-              <Text style={styles.subText}>Good morning!</Text>
+              <Text style={styles.subText}>
+                Good {getGreeting()}! Let's take care of your pet.
+              </Text>
             </View>
-            <TouchableOpacity style={styles.bellButton}>
-              <Bell size={20} color="#374151" />
+            <TouchableOpacity
+              style={styles.notificationButton}
+              activeOpacity={0.8}
+            >
+              <Bell size={20} color="#343344" />
+              {upcomingAppointments + upcomingVaccinations > 0 && (
+                <View style={styles.notificationDot} />
+              )}
             </TouchableOpacity>
           </View>
-
-          {/* Pet Profile Card */}
-          <View style={styles.sectionContainer}>
-            <TouchableOpacity style={styles.petCard} activeOpacity={0.7}>
-              <View style={styles.petInfoLeft}>
-                <Image
-                  source={{
-                    uri: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=150&q=80',
-                  }}
-                  style={styles.petAvatar}
-                />
-                <View>
-                  <Text style={styles.petName}>Bruno</Text>
-                  <Text style={styles.petBreed}>Golden Retriever</Text>
-                  <Text style={styles.petMeta}>3 Years • 28kgs</Text>
-                </View>
+          {error ? (
+            <TouchableOpacity
+              style={styles.errorCard}
+              onPress={loadDashboard}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.errorTitle}>Something went wrong</Text>
+              <Text style={styles.errorText}>{error}</Text>
+              <Text style={styles.retryText}>Tap to retry</Text>
+            </TouchableOpacity>
+          ) : null}
+          <View style={styles.petSection}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>My Pet</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Your little one's profile
+                </Text>
               </View>
-              <ChevronRight size={20} color="#9CA3AF" />
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push("/tabs/pets")}
+              >
+                <Text style={styles.viewAllText}>View all</Text>
+              </TouchableOpacity>
+            </View>
+            {firstPet ? (
+              <TouchableOpacity
+                style={styles.petCard}
+                activeOpacity={0.85}
+                onPress={() =>
+                  router.push({
+                    pathname: "/tabs/screen/pets/petProfile",
+                    params: {
+                      id: getPetId(firstPet),
+                    },
+                  })
+                }
+              >
+                <View style={styles.petInfo}>
+                  {petImage ? (
+                    <Image
+                      source={{ uri: petImage }}
+                      style={styles.petAvatar}
+                    />
+                  ) : (
+                    <View style={styles.petAvatarPlaceholder}>
+                      <HeartPulse size={27} color={PURPLE} />
+                    </View>
+                  )}
+                  <View style={styles.petDetails}>
+                    <Text style={styles.petName}>
+                      {firstPet.name || "My Pet"}
+                    </Text>
+                    <Text style={styles.petBreed}>
+                      {firstPet.breed || firstPet.species || firstPet.type || "Pet"}
+                    </Text>
+                    <View style={styles.petMetaRow}>
+                      {getPetAge(firstPet) ? (
+                        <Text style={styles.petMeta}>
+                          {getPetAge(firstPet)}
+                        </Text>
+                      ) : null}
+                      {firstPet.weight ? (
+                        <Text style={styles.petMeta}>
+                          {getPetAge(firstPet) ? " • " : ""}
+                          {firstPet.weight} kg
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.arrowCircle}>
+                  <ChevronRight size={18} color={PURPLE} />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.emptyPetCard}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/pets")}
+              >
+                <View style={styles.emptyPetIcon}>
+                  <Plus size={24} color={PURPLE} />
+                </View>
+                <View style={styles.emptyPetText}>
+                  <Text style={styles.emptyPetTitle}>
+                    Add your first pet
+                  </Text>
+                  <Text style={styles.emptyPetSubtitle}>
+                    Start managing your pet's health and care
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#A4A2B2" />
+              </TouchableOpacity>
+            )}
           </View>
-
-          {/* Today's Overview Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Today's Overview</Text>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Health Overview</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Keep track of important care
+                </Text>
+              </View>
+            </View>
             <View style={styles.overviewGrid}>
-
               <TouchableOpacity
                 style={styles.overviewCard}
                 activeOpacity={0.8}
-                onPress={() => router.push("/tabs/screen/vaccination/vaccinationManagement")}
+                onPress={() =>
+                  router.push(
+                    "/tabs/screen/healthRecords/healthRecords"
+                  )
+                }
               >
-                <Text style={styles.overviewNumber}>2</Text>
-                <Text style={styles.overviewLabel}>Upcoming Vaccines</Text>
+                <View style={styles.overviewIcon}>
+                  <HeartPulse size={19} color={PURPLE} />
+                </View>
+                <Text style={styles.overviewNumber}>
+                  {totalHealthRecords}
+                </Text>
+                <Text style={styles.overviewLabel}>
+                  Health{"\n"}Records
+                </Text>
               </TouchableOpacity>
-
-              <View style={styles.overviewCard}>
-                <Text style={styles.overviewNumber}>1</Text>
-                <Text style={styles.overviewLabel}>Upcoming Appointment</Text>
-              </View>
-
-              <View style={styles.overviewCard}>
-                <Text style={styles.overviewNumber}>3</Text>
-                <Text style={styles.overviewLabel}>Recent Activities</Text>
-              </View>
-
+              <TouchableOpacity
+                style={styles.overviewCard}
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push(
+                    "/tabs/screen/vaccination/vaccinationManagement"
+                  )
+                }
+              >
+                <View style={styles.overviewIcon}>
+                  <Syringe size={19} color={PURPLE} />
+                </View>
+                <Text style={styles.overviewNumber}>
+                  {upcomingVaccinations}
+                </Text>
+                <Text style={styles.overviewLabel}>
+                  Upcoming{"\n"}Vaccines
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.overviewCard}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/appointment")}
+              >
+                <View style={styles.overviewIcon}>
+                  <Calendar size={19} color={PURPLE} />
+                </View>
+                <Text style={styles.overviewNumber}>
+                  {upcomingAppointments}
+                </Text>
+                <Text style={styles.overviewLabel}>
+                  Upcoming{"\n"}Appointments
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* AI Health Highlights Banner */}
-          <View style={styles.sectionContainer}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Upcoming Care</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Don't miss your pet's important care
+                </Text>
+              </View>
+            </View>
+            {upcomingVaccine || upcomingAppointment ? (
+              <View>
+                {upcomingVaccine ? (
+                  <TouchableOpacity
+                    style={styles.careCard}
+                    activeOpacity={0.82}
+                    onPress={() =>
+                      router.push(
+                        "/tabs/screen/vaccination/vaccinationManagement"
+                      )
+                    }
+                  >
+                    <View style={styles.careIcon}>
+                      <Syringe size={21} color={PURPLE} />
+                    </View>
+                    <View style={styles.careContent}>
+                      <Text style={styles.careType}>
+                        VACCINATION
+                      </Text>
+                      <Text style={styles.careTitle}>
+                        {upcomingVaccine.name ||
+                          upcomingVaccine.vaccineName ||
+                          upcomingVaccine.title ||
+                          "Upcoming Vaccine"}
+                      </Text>
+                      <Text style={styles.careDate}>
+                        {upcomingVaccine.date ||
+                          upcomingVaccine.dueDate ||
+                          "Check vaccination schedule"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={19} color="#A4A2B2" />
+                  </TouchableOpacity>
+                ) : null}
+                {upcomingAppointment ? (
+                  <TouchableOpacity
+                    style={styles.careCard}
+                    activeOpacity={0.82}
+                    onPress={() => router.push("/tabs/appointment")}
+                  >
+                    <View style={styles.careIcon}>
+                      <Calendar size={21} color={PURPLE} />
+                    </View>
+                    <View style={styles.careContent}>
+                      <Text style={styles.careType}>
+                        APPOINTMENT
+                      </Text>
+                      <Text style={styles.careTitle}>
+                        {upcomingAppointment.title ||
+                          upcomingAppointment.reason ||
+                          upcomingAppointment.doctorName ||
+                          "Upcoming Appointment"}
+                      </Text>
+                      <Text style={styles.careDate}>
+                        {upcomingAppointment.date ||
+                          upcomingAppointment.appointmentDate ||
+                          "Check appointment details"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={19} color="#A4A2B2" />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.noCareCard}>
+                <View style={styles.noCareIcon}>
+                  <HeartPulse size={22} color={PURPLE} />
+                </View>
+                <View style={styles.noCareContent}>
+                  <Text style={styles.noCareTitle}>
+                    You're all caught up! 🐾
+                  </Text>
+                  <Text style={styles.noCareText}>
+                    No upcoming vaccinations or appointments right now.
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+          <View style={styles.section}>
             <View style={styles.aiBanner}>
-              <View style={styles.aiHeader}>
-                <Sparkles size={16} color="#FDE047" />
-                <Text style={styles.aiTitle}>AI Health Highlights</Text>
+              <View style={styles.aiGlowCircle} />
+              <View style={styles.aiTopRow}>
+                <View style={styles.aiTitleRow}>
+                  <View style={styles.aiIcon}>
+                    <Sparkles size={16} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.aiTitle}>PetPal AI</Text>
+                </View>
+                <Bot size={27} color="#DDD8FA" />
               </View>
-
-              <Text style={styles.aiDescription}>
-                Bruno is doing great! Keep up with regular walks and a balanced diet.
+              <Text style={styles.aiHeading}>
+                Your pet's smart care companion
               </Text>
-
-              <View style={styles.aiFooter}>
-                <TouchableOpacity style={styles.aiButton} activeOpacity={0.8}>
-                  <Text style={styles.aiButtonText}>Ask AI Assistant</Text>
-                </TouchableOpacity>
-                <View style={styles.aiRobotIcon}>
-                  <Bot size={22} color="#FFFFFF" />
-                </View>
+              <Text style={styles.aiDescription}>
+                Get health guidance, care recommendations, vaccination help
+                and more with PetPal.
+              </Text>
+              <TouchableOpacity
+                style={styles.aiButton}
+                activeOpacity={0.85}
+                onPress={() => router.push("/tabs/ai")}
+              >
+                <Sparkles size={15} color={PURPLE} />
+                <Text style={styles.aiButtonText}>
+                  Talk to PetPal
+                </Text>
+                <ChevronRight size={16} color={PURPLE} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Care Tips</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Helpful information for better pet care
+                </Text>
               </View>
             </View>
+            <TouchableOpacity
+              style={styles.careTipsCard}
+              activeOpacity={0.85}
+              onPress={() =>
+                router.push("/tabs/screen/blogs/blogs")
+              }
+            >
+              <View style={styles.careTipsIcon}>
+                <BookOpen size={24} color={PURPLE} />
+              </View>
+              <View style={styles.careTipsContent}>
+                <Text style={styles.careTipsTitle}>
+                  Explore Pet Care Tips
+                </Text>
+                <Text
+                  style={styles.careTipsDescription}
+                  numberOfLines={2}
+                >
+                  Learn helpful tips about health, grooming, nutrition and
+                  everyday pet care.
+                </Text>
+              </View>
+              <View style={styles.arrowCircle}>
+                <ChevronRight size={18} color={PURPLE} />
+              </View>
+            </TouchableOpacity>
           </View>
-
-          {/* Quick Access Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Quick Access</Text>
-            <View style={styles.quickAccessGrid}>
-
-              <TouchableOpacity style={styles.quickAccessItem} activeOpacity={0.7}>
-                <View style={styles.quickIconBox}>
-                  <PlusCircle size={22} color="#6C5DD3" />
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Everything you need, right here
+                </Text>
+              </View>
+            </View>
+            <View style={styles.quickGrid}>
+              <TouchableOpacity
+                style={styles.quickItem}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/pets")}
+              >
+                <View style={styles.quickIcon}>
+                  <Plus size={21} color={PURPLE} />
                 </View>
-                <Text style={styles.quickAccessText}>Add Pet</Text>
+                <Text style={styles.quickText}>Add Pet</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.quickAccessItem} activeOpacity={0.7}>
-                <View style={styles.quickIconBox}>
-                  <Calendar size={22} color="#6C5DD3" />
+              <TouchableOpacity
+                style={styles.quickItem}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/appointment")}
+              >
+                <View style={styles.quickIcon}>
+                  <Calendar size={21} color={PURPLE} />
                 </View>
-                <Text style={styles.quickAccessText}>Book Appt.</Text>
+                <Text style={styles.quickText}>Appointment</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.quickAccessItem} activeOpacity={0.7}>
-                <View style={styles.quickIconBox}>
-                  <FileText size={22} color="#6C5DD3" />
+              <TouchableOpacity
+                style={styles.quickItem}
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push(
+                    "/tabs/screen/healthRecords/healthRecords"
+                  )
+                }
+              >
+                <View style={styles.quickIcon}>
+                  <FileText size={21} color={PURPLE} />
                 </View>
-                <Text style={styles.quickAccessText}>Health Record</Text>
+                <Text style={styles.quickText}>Health Record</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.quickAccessItem} activeOpacity={0.7}>
-                <View style={styles.quickIconBox}>
-                  <Bot size={22} color="#6C5DD3" />
+              <TouchableOpacity
+                style={styles.quickItem}
+                activeOpacity={0.8}
+                onPress={() => router.push("/tabs/ai")}
+              >
+                <View style={styles.quickIcon}>
+                  <Bot size={21} color={PURPLE} />
                 </View>
-                <Text style={styles.quickAccessText}>AI Assistant</Text>
+                <Text style={styles.quickText}>PetPal AI</Text>
               </TouchableOpacity>
-
             </View>
           </View>
-
+          <View style={styles.bottomMessage}>
+            <Sparkles size={15} color="#A3A1AF" />
+            <Text style={styles.bottomMessageText}>
+              PetCare helps you keep your pet's health and care organized.
+            </Text>
+          </View>
         </ScrollView>
-
       </View>
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9F8FD",
   },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    position: 'relative',
+    backgroundColor: "#F9F8FD",
+  },
+  dashboardScroll: {
+    flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingTop: 5,
+    paddingBottom: 120,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 22,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
+  },
+  headerTextContainer: {
+    flex: 1,
+    paddingRight: 15,
   },
   welcomeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexDirection: "row",
+    alignItems: "center",
   },
   welcomeText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1D1E2C",
   },
   waveEmoji: {
-    fontSize: 18,
+    fontSize: 19,
+    marginLeft: 5,
   },
   subText: {
+    fontSize: 12.5,
+    color: "#8B8A99",
+    marginTop: 5,
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+  },
+  notificationDot: {
+    position: "absolute",
+    top: 9,
+    right: 10,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: PURPLE,
+  },
+  petSection: {
+    paddingHorizontal: 22,
+    marginTop: 15,
+  },
+  section: {
+    paddingHorizontal: 22,
+    marginTop: 22,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 11,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#242435",
+  },
+  sectionSubtitle: {
+    fontSize: 10.5,
+    color: "#9A98A7",
+    marginTop: 3,
+  },
+  viewAllText: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  bellButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionContainer: {
-    paddingHorizontal: 24,
-    marginTop: 20,
+    fontWeight: "700",
+    color: PURPLE,
+    marginTop: 3,
   },
   petCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
+    borderRadius: 19,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderColor: "#ECEAF3",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 2,
   },
-  petInfoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  petInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   petAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#F3E8FF',
+    width: 65,
+    height: 65,
+    borderRadius: 19,
+    backgroundColor: "#EFECFB",
+  },
+  petAvatarPlaceholder: {
+    width: 65,
+    height: 65,
+    borderRadius: 19,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  petDetails: {
+    marginLeft: 13,
+    flex: 1,
   },
   petName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#242435",
   },
   petBreed: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
+    color: "#737281",
+    marginTop: 3,
+  },
+  petMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
   },
   petMeta: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 2,
+    fontSize: 10.5,
+    color: "#A09EAC",
   },
-  sectionTitle: {
+  arrowCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F2F0FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyPetCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 19,
+    padding: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+  },
+  emptyPetIcon: {
+    width: 53,
+    height: 53,
+    borderRadius: 16,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyPetText: {
+    flex: 1,
+    marginLeft: 13,
+  },
+  emptyPetTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
+    fontWeight: "800",
+    color: "#242435",
+  },
+  emptyPetSubtitle: {
+    fontSize: 10.5,
+    color: "#9694A3",
+    marginTop: 4,
   },
   overviewGrid: {
-    flexDirection: 'row',
-    gap: 12,
+    flexDirection: "row",
+    gap: 9,
   },
   overviewCard: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
-    borderWidth: 1,
-    borderColor: '#EDE9FE',
-    borderRadius: 16,
+    minHeight: 118,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 17,
     padding: 12,
-    justifyContent: 'space-between',
-    minHeight: 85,
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+  },
+  overviewIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 7,
   },
   overviewNumber: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#6C5DD3',
+    fontSize: 23,
+    fontWeight: "900",
+    color: PURPLE,
   },
   overviewLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#4B5563',
-    marginTop: 8,
+    fontSize: 10,
     lineHeight: 14,
+    color: "#696775",
+    marginTop: 3,
   },
-  aiBanner: {
-    backgroundColor: '#6C5DD3',
-    borderRadius: 16,
-    padding: 20,
-    position: 'relative',
-    overflow: 'hidden',
+  careCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 17,
+    padding: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
   },
-  aiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+  careIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
   },
-  aiTitle: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#F3E8FF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  aiDescription: {
-    fontSize: 12,
-    color: '#F9FAFB',
-    marginBottom: 16,
-    lineHeight: 18,
-  },
-  aiFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  aiButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-  aiButtonText: {
-    color: '#6C5DD3',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  aiRobotIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickAccessGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickAccessItem: {
-    alignItems: 'center',
-    gap: 6,
+  careContent: {
     flex: 1,
   },
-  quickIconBox: {
-    width: 48,
-    height: 48,
+  careType: {
+    fontSize: 8.5,
+    fontWeight: "800",
+    color: PURPLE,
+    letterSpacing: 0.7,
+    marginBottom: 3,
+  },
+  careTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#292936",
+  },
+  careDate: {
+    fontSize: 10.5,
+    color: "#8B8998",
+    marginTop: 3,
+  },
+  noCareCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 17,
+    padding: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+  },
+  noCareIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
+  },
+  noCareContent: {
+    flex: 1,
+  },
+  noCareTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#292936",
+  },
+  noCareText: {
+    fontSize: 10.5,
+    lineHeight: 16,
+    color: "#8B8998",
+    marginTop: 3,
+  },
+  aiBanner: {
+    backgroundColor: PURPLE,
+    borderRadius: 21,
+    padding: 18,
+    overflow: "hidden",
+  },
+  aiGlowCircle: {
+    position: "absolute",
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    right: -45,
+    top: -55,
+  },
+  aiTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  aiTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  aiIcon: {
+    width: 29,
+    height: 29,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  aiTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
+  },
+  aiHeading: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginTop: 15,
+  },
+  aiDescription: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: "#F1EFFF",
+    marginTop: 6,
+    marginBottom: 15,
+  },
+  aiButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  aiButtonText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: PURPLE,
+    marginHorizontal: 5,
+  },
+  careTipsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  careTipsIcon: {
+    width: 54,
+    height: 54,
     borderRadius: 16,
-    backgroundColor: '#F5F3FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
-  quickAccessText: {
+  careTipsContent: {
+    flex: 1,
+  },
+  careTipsTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#242435",
+  },
+  careTipsDescription: {
+    fontSize: 10.5,
+    lineHeight: 16,
+    color: "#8B8998",
+    marginTop: 4,
+  },
+  quickGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 19,
+    paddingVertical: 15,
+    borderWidth: 1,
+    borderColor: "#ECEAF3",
+  },
+  quickItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  quickIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  quickText: {
+    fontSize: 9.5,
+    fontWeight: "600",
+    color: "#656371",
+    textAlign: "center",
+  },
+  bottomMessage: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 35,
+    marginTop: 25,
+  },
+  bottomMessageText: {
+    fontSize: 9.5,
+    color: "#A3A1AF",
+    marginLeft: 6,
+    textAlign: "center",
+  },
+  errorCard: {
+    marginHorizontal: 22,
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 15,
+    backgroundColor: "#FFF5F5",
+    borderWidth: 1,
+    borderColor: "#F4D5D5",
+  },
+  errorTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#B42318",
+  },
+  errorText: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#4B5563',
+    color: "#8A3333",
+    marginTop: 3,
   },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderColor: '#F3F4F6',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  retryText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#B42318",
+    marginTop: 6,
   },
-  navItem: {
-    alignItems: 'center',
-    gap: 4,
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  navText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#9CA3AF',
+  loadingIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: "#EFECFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
   },
-  navTextActive: {
-    fontWeight: 'bold',
-    color: '#6C5DD3',
-  },
-  floatingButtonContainer: {
-    top: -18,
-  },
-  floatingButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#6C5DD3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#6C5DD3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+  loadingText: {
+    fontSize: 12,
+    color: "#898897",
+    marginTop: 10,
   },
 });

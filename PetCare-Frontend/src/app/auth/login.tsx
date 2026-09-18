@@ -1,32 +1,35 @@
-import React, { useState } from "react";
-import { Alert, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { login } from "@/services/auth";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  StatusBar,
-  ScrollView,
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { Ionicons, AntDesign } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { login } from "@/services/auth";
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Required Fields", "Please enter your email and password.");
       return;
     }
 
@@ -34,26 +37,39 @@ export default function Login() {
       setLoading(true);
 
       const response = await login({
-        email,
+        email: email.trim(),
         password,
       });
 
       console.log("Login Response:", response);
 
-      // Save logged in user
+      // Save logged-in user
       await AsyncStorage.setItem(
         "user",
         JSON.stringify(response.user)
       );
 
-      // Verify it was saved
-      const savedUser = await AsyncStorage.getItem("user");
-      console.log("Saved User:", savedUser);
+      await AsyncStorage.setItem(
+        "token",
+        response.token
+      );
 
-      Alert.alert("Success", response.message);
+      // Save token if backend returns one
+      if (response?.token) {
+        await AsyncStorage.setItem("token", response.token);
+      }
+
+      console.log(
+        "Saved User:",
+        await AsyncStorage.getItem("user")
+      );
+
+      Alert.alert(
+        "Login Successful",
+        response?.message || "Welcome back!"
+      );
 
       router.replace("/tabs/dashboard");
-
     } catch (error: any) {
       console.log("LOGIN ERROR:", error);
       console.log("Response:", error?.response);
@@ -63,7 +79,7 @@ export default function Login() {
         "Login Failed",
         error?.response?.data?.message ||
         error?.message ||
-        "Something went wrong"
+        "Invalid email or password."
       );
     } finally {
       setLoading(false);
@@ -71,99 +87,152 @@ export default function Login() {
   };
 
   const goToSignUp = () => {
-    router.push('/auth/register');
+    router.push("/auth/register");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F7FC" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F9F8FD"
+      />
+
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
+          {/* Back Button */}
           <TouchableOpacity
-            onPress={() => router.back()}
             style={styles.backButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            hitSlop={{
+              top: 10,
+              bottom: 10,
+              left: 10,
+              right: 10,
+            }}
           >
-            <Ionicons name="arrow-back" size={24} color="#1F2340" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#1F2030"
+            />
           </TouchableOpacity>
 
-          {/* Heading */}
-          <Text style={styles.title}>Welcome Back! 👋</Text>
-          <Text style={styles.subtitle}>Login to continue</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Welcome Back! 👋
+            </Text>
 
-          {/* Email / Phone */}
-          <View style={styles.inputWrap}>
+            <Text style={styles.subtitle}>
+              Login to continue
+            </Text>
+          </View>
+
+          {/* Email */}
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Email or Phone"
-              placeholderTextColor="#9C9CB0"
+              placeholderTextColor="#A3A2B1"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
+              returnKeyType="next"
             />
           </View>
 
           {/* Password */}
-          <View style={styles.inputWrap}>
+          <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={styles.passwordInput}
               placeholder="Password"
-              placeholderTextColor="#9C9CB0"
+              placeholderTextColor="#A3A2B1"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() =>
+                setShowPassword((previous) => !previous)
+              }
+              activeOpacity={0.7}
+            >
               <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                name={
+                  showPassword
+                    ? "eye-off-outline"
+                    : "eye-outline"
+                }
                 size={20}
-                color="#9C9CB0"
+                color="#8F8E9E"
               />
             </TouchableOpacity>
           </View>
 
-          {/* Forgot password */}
+          {/* Forgot Password */}
           <TouchableOpacity
-            style={styles.forgotWrap}
-            onPress={() => router.push('/auth/forgot-password')}
+            style={styles.forgotButton}
+            onPress={() =>
+              router.push("/auth/forgot-password")
+            }
+            activeOpacity={0.7}
           >
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>
+              Forgot Password?
+            </Text>
           </TouchableOpacity>
 
-          {/* Login button */}
+          {/* Login Button */}
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[
+              styles.loginButton,
+              loading && styles.loginButtonDisabled,
+            ]}
             activeOpacity={0.85}
             onPress={handleLogin}
+            disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
             ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginButtonText}>
+                Login
+              </Text>
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* Sign Up */}
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>
+              Don't have an account?{" "}
+            </Text>
 
-          {/* Sign up link */}
-          <View style={styles.signupRow}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={goToSignUp}>
-              <Text style={styles.signupLink}>Sign Up</Text>
+            <TouchableOpacity
+              onPress={goToSignUp}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.signupLink}>
+                Sign Up
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -175,117 +244,202 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: "#F9F8FD",
   },
+
+  keyboardView: {
+    flex: 1,
+  },
+
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    flexGrow: 1,
+    paddingHorizontal: 22,
+    paddingBottom: 28,
   },
+
+  /* Back Button */
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1F2340',
-    marginTop: 12,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#8B8CA0',
+    justifyContent: "center",
+    alignItems: "flex-start",
     marginTop: 4,
-    marginBottom: 24,
   },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+
+  /* Header */
+  header: {
+    marginTop: 26,
+    marginBottom: 28,
+  },
+
+  title: {
+    fontSize: 25,
+    fontWeight: "800",
+    color: "#1D1E2C",
+    letterSpacing: -0.4,
+  },
+
+  subtitle: {
+    fontSize: 14,
+    color: "#898897",
+    marginTop: 6,
+  },
+
+  /* Inputs */
+  inputContainer: {
+    height: 53,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#EAE9F2',
-    paddingHorizontal: 16,
-    height: 54,
-    marginBottom: 14,
+    borderColor: "#E7E5EE",
+    borderRadius: 13,
+    paddingHorizontal: 15,
+    marginBottom: 13,
+
+    shadowColor: "#B9B5C9",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 1,
   },
+
   input: {
     flex: 1,
-    fontSize: 15,
-    color: '#1F2340',
-  },
-  forgotWrap: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotText: {
+    height: "100%",
     fontSize: 14,
-    color: '#6C4CE0',
-    fontWeight: '600',
+    color: "#202131",
   },
+
+  passwordInput: {
+    flex: 1,
+    height: "100%",
+    fontSize: 14,
+    color: "#202131",
+  },
+
+  eyeButton: {
+    width: 34,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+
+  /* Forgot Password */
+  forgotButton: {
+    alignSelf: "flex-end",
+    marginTop: 1,
+    marginBottom: 21,
+  },
+
+  forgotText: {
+    fontSize: 12.5,
+    fontWeight: "600",
+    color: "#6C5DD3",
+  },
+
+  /* Login */
   loginButton: {
-    backgroundColor: '#6C4CE0',
-    borderRadius: 14,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#6C4CE0',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    height: 53,
+    width: "100%",
+    borderRadius: 13,
+    backgroundColor: "#6C5DD3",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#6C5DD3",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 5,
   },
+
+  loginButtonDisabled: {
+    opacity: 0.75,
+  },
+
   loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
+
+  /* Divider */
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 22,
   },
+
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E4EF',
+    backgroundColor: "#E6E4ED",
   },
+
   dividerText: {
-    marginHorizontal: 12,
-    fontSize: 13,
-    color: '#9C9CB0',
+    marginHorizontal: 11,
+    fontSize: 11.5,
+    color: "#9695A5",
   },
+
+  /* Social Buttons */
   socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    height: 51,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    backgroundColor: "#FFFFFF",
+
     borderWidth: 1,
-    borderColor: '#EAE9F2',
-    borderRadius: 14,
-    height: 54,
-    marginBottom: 14,
+    borderColor: "#E5E4EC",
+    borderRadius: 13,
+
+    marginBottom: 12,
+
+    shadowColor: "#B9B5C9",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
+
   socialButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2340',
     marginLeft: 10,
+    fontSize: 13.5,
+    fontWeight: "600",
+    color: "#252535",
   },
-  signupRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
+
+  /* Sign Up */
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: "auto",
+    paddingTop: 24,
   },
+
   signupText: {
-    fontSize: 14,
-    color: '#8B8CA0',
+    fontSize: 12.5,
+    color: "#8D8C9B",
   },
+
   signupLink: {
-    fontSize: 14,
-    color: '#6C4CE0',
-    fontWeight: '700',
+    fontSize: 12.5,
+    color: "#6C5DD3",
+    fontWeight: "700",
   },
 });

@@ -5,6 +5,7 @@ import {
   getAllVaccinations,
   getVaccinationById,
   getVaccinationsByPetId,
+  getVaccinationsByUserId,
   getVaccinationHistory,
   getUpcomingDueVaccinations,
   updateVaccination,
@@ -18,6 +19,7 @@ const router = express.Router();
 router.post("/", authMiddleware, createVaccination);
 router.get("/", authMiddleware, getAllVaccinations);
 router.get("/pet/:petId", authMiddleware, getVaccinationsByPetId);
+router.get("/user/:userId", authMiddleware, getVaccinationsByUserId);
 router.get("/history/:petId", authMiddleware, getVaccinationHistory);
 router.get("/due", authMiddleware, getUpcomingDueVaccinations);
 router.get("/:id", authMiddleware, getVaccinationById);

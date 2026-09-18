@@ -1,123 +1,177 @@
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  StatusBar,
   Dimensions,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  Image,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-export default function PetCareOnboarding() {
+export default function GetStarted() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    router.push('/auth/register');
+    router.push("/auth/register");
   };
 
   const handleLogin = () => {
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7FB" />
-
-      {/* Decorative background icons */}
-      <MaterialCommunityIcons
-        name="paw"
-        size={34}
-        color="#DCD9F5"
-        style={[styles.decor, { top: 40, left: 24, transform: [{ rotate: '-20deg' }] }]}
-      />
-      <MaterialCommunityIcons
-        name="paw"
-        size={30}
-        color="#DCD9F5"
-        style={[styles.decor, { top: 60, right: 32, transform: [{ rotate: '15deg' }] }]}
-      />
-      <MaterialCommunityIcons
-        name="paw"
-        size={26}
-        color="#E3E0F7"
-        style={[styles.decor, { top: 220, right: 20 }]}
-      />
-      <Ionicons
-        name="sparkles"
-        size={18}
-        color="#DCD9F5"
-        style={[styles.decor, { top: 165, left: 40 }]}
-      />
-      <Ionicons
-        name="sparkles"
-        size={16}
-        color="#DCD9F5"
-        style={[styles.decor, { top: 400, left: 20 }]}
-      />
-      <Ionicons
-        name="heart"
-        size={26}
-        color="#D9D4F5"
-        style={[styles.decor, { top: 265, left: 24 }]}
-      />
-      <Ionicons
-        name="heart-outline"
-        size={26}
-        color="#C9C2F0"
-        style={[styles.decor, { top: 350, right: 24 }]}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F9F8FD"
       />
 
-      {/* Logo */}
-      <View style={styles.logoRow}>
+      {/* =========================
+          HEADER
+      ========================== */}
+      <View style={styles.header}>
         <Image
-          source={require('@/assets/images/logo.png')}
-          style={styles.logoImage}
+          source={require("@/assets/images/logo1.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <Text style={styles.brandName}>
+          Pet<Text style={styles.brandPurple}>Care</Text>
+        </Text>
+      </View>
+
+      {/* =========================
+          HEADING
+      ========================== */}
+      <View style={styles.headingContainer}>
+        <Text style={styles.title}>
+          Smart care for{"\n"}your pet.
+        </Text>
+
+        <Text style={styles.description}>
+          Manage your pet's health, records and
+          everyday care — all in one place.
+        </Text>
+      </View>
+
+      {/* =========================
+          PET IMAGE
+      ========================== */}
+      <View style={styles.heroContainer}>
+        <View style={styles.mainBlob} />
+
+        <View style={styles.smallBlobTop} />
+
+        <View style={styles.smallBlobBottom} />
+
+        <Ionicons
+          name="sparkles"
+          size={19}
+          color="#B9B0EA"
+          style={styles.sparkleOne}
+        />
+
+        <Ionicons
+          name="sparkles"
+          size={14}
+          color="#CEC8EF"
+          style={styles.sparkleTwo}
+        />
+
+        <Image
+          source={require("@/assets/images/get-started.png")}
+          style={styles.petImage}
           resizeMode="contain"
         />
       </View>
 
-      <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: '#2864a0' }]}>Pet</Text>
-        <Text style={[styles.title, { color: '#3CB878' }]}>Care</Text>
+      {/* =========================
+          FEATURES
+      ========================== */}
+      <View style={styles.featuresContainer}>
+        <View style={styles.feature}>
+          <View style={styles.featureIconContainer}>
+            <Ionicons
+              name="heart-outline"
+              size={18}
+              color="#6C5DD3"
+            />
+          </View>
+
+          <Text style={styles.featureTitle}>
+            Health
+          </Text>
+        </View>
+
+        <View style={styles.feature}>
+          <View style={styles.featureIconContainer}>
+            <Ionicons
+              name="calendar-outline"
+              size={18}
+              color="#6C5DD3"
+            />
+          </View>
+
+          <Text style={styles.featureTitle}>
+            Reminders
+          </Text>
+        </View>
+
+        <View style={styles.feature}>
+          <View style={styles.featureIconContainer}>
+            <Ionicons
+              name="sparkles-outline"
+              size={18}
+              color="#6C5DD3"
+            />
+          </View>
+
+          <Text style={styles.featureTitle}>
+            AI Care
+          </Text>
+        </View>
       </View>
 
-      <Text style={styles.subtitleBold}>AI-Powered Pet Care</Text>
-      <Text style={styles.subtitle}>
-        Smart Pet Health &{'\n'}Care Management
-      </Text>
+      {/* =========================
+          BUTTON
+      ========================== */}
+      <TouchableOpacity
+        style={styles.getStartedButton}
+        onPress={handleGetStarted}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.getStartedText}>
+          Get Started
+        </Text>
 
-      {/* Pet image (combined cat + dog asset) */}
-      <View style={styles.petImageWrap}>
-        <Image
-          source={require('@/assets/images/get-started.png')}
-          style={styles.heroImage}
-          resizeMode="contain"
+        <Ionicons
+          name="arrow-forward"
+          size={20}
+          color="#FFFFFF"
         />
-      </View>
-
-      {/* CTA */}
-      <TouchableOpacity activeOpacity={0.85} onPress={handleGetStarted}>
-        <LinearGradient
-          colors={['#7C6CF0', '#6C4CE0']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.ctaButton}
-        >
-          <Text style={styles.ctaText}>Get Started</Text>
-        </LinearGradient>
       </TouchableOpacity>
 
-      <View style={styles.loginRow}>
-        <Text style={styles.loginText}>Already have an account? </Text>
-        <TouchableOpacity onPress={handleLogin}>
-          <Text style={styles.loginLink}>Login</Text>
+      {/* =========================
+          LOGIN
+      ========================== */}
+      <View style={styles.loginContainer}>
+        <Text style={styles.loginText}>
+          Already have an account?{" "}
+        </Text>
+
+        <TouchableOpacity
+          onPress={handleLogin}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.loginLink}>
+            Login
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -125,89 +179,272 @@ export default function PetCareOnboarding() {
 }
 
 const styles = StyleSheet.create({
+  /* =========================
+     SCREEN
+  ========================== */
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
-    paddingHorizontal: 24,
-    alignItems: 'center',
+    backgroundColor: "#F9F8FD",
+    paddingHorizontal: 22,
+    paddingTop: height < 700 ? 18 : 26,
+    paddingBottom: height < 700 ? 10 : 14,
+    justifyContent: "space-between",
   },
-  decor: {
-    position: 'absolute',
-    zIndex: 0,
+
+  /* =========================
+   HEADER
+========================= */
+
+  header: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
   },
-  logoRow: {
-    marginTop: 32,
-    width: '100%',
-    height: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  logo: {
+    width: 72,
+    height: 58,
   },
-  logoImage: {
-    width: 120,
-    height: 64,
+
+  brandName: {
+    fontSize: 35,
+    fontWeight: "800",
+    color: "#242435",
+    letterSpacing: -0.7,
+    marginTop: -4,
   },
-  titleRow: {
-    flexDirection: 'row',
-    marginTop: 8,
+
+  brandPurple: {
+    color: "#6C5DD3",
   },
+
+  /* =========================
+     HEADING
+  ========================= */
+
+  headingContainer: {
+    alignItems: "center",
+  },
+
   title: {
-    fontSize: 42,
-    fontWeight: '800',
+    textAlign: "center",
+    fontSize: 23,
+    lineHeight: 29,
+    fontWeight: "700",
+    color: "#1D1E2C",
+    letterSpacing: -0.4,
   },
-  subtitleBold: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2340',
-    marginTop: 14,
+
+  description: {
+    textAlign: "center",
+    fontSize: 12.5,
+    lineHeight: 19,
+    color: "#898897",
+    marginTop: 7,
+    paddingHorizontal: 12,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#8B8CA0',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 22,
+
+  /* =========================
+     HERO
+  ========================== */
+
+  heroContainer: {
+    width: width - 44,
+    height: height < 700
+      ? height * 0.30
+      : height * 0.32,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    marginVertical: 2,
   },
-  petImageWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    width: '100%',
-    height: width * 0.75,
+
+  mainBlob: {
+    position: "absolute",
+
+    width: width * 0.68,
+    height: width * 0.68,
+
+    maxWidth: 285,
+    maxHeight: 285,
+
+    borderRadius: 180,
+
+    backgroundColor: "#EEEBFA",
+
+    transform: [
+      {
+        scaleX: 1.08,
+      },
+    ],
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+
+  smallBlobTop: {
+    position: "absolute",
+
+    width: 42,
+    height: 42,
+
+    borderRadius: 30,
+
+    backgroundColor: "#E5E0F8",
+
+    top: height < 700 ? 8 : 14,
+    right: width * 0.13,
   },
-  ctaButton: {
-    width: width - 48,
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    shadowColor: '#6C4CE0',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+
+  smallBlobBottom: {
+    position: "absolute",
+
+    width: 25,
+    height: 25,
+
+    borderRadius: 20,
+
+    backgroundColor: "#DDD7F4",
+
+    bottom: height < 700 ? 10 : 18,
+    left: width * 0.16,
+  },
+
+  petImage: {
+    width: width * 0.87,
+    height: "100%",
+    zIndex: 2,
+  },
+
+  sparkleOne: {
+    position: "absolute",
+
+    top: height < 700 ? 18 : 24,
+    left: width * 0.17,
+
+    zIndex: 3,
+  },
+
+  sparkleTwo: {
+    position: "absolute",
+
+    bottom: height < 700 ? 28 : 34,
+    right: width * 0.16,
+
+    zIndex: 3,
+  },
+
+  /* =========================
+     FEATURES
+  ========================== */
+
+  featuresContainer: {
+    flexDirection: "row",
+
+    width: "100%",
+
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+
+    marginTop: 0,
+  },
+
+  feature: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  featureIconContainer: {
+    width: 38,
+    height: 38,
+
+    borderRadius: 12,
+
+    backgroundColor: "#EFECFB",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginBottom: 5,
+  },
+
+  featureTitle: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: "#2A2938",
+  },
+
+  featureSubtitle: {
+    fontSize: 9.5,
+    color: "#9695A4",
+    marginTop: 2,
+  },
+
+  /* =========================
+     GET STARTED BUTTON
+  ========================== */
+
+  getStartedButton: {
+    height: 54,
+
+    width: "100%",
+
+    borderRadius: 14,
+
+    backgroundColor: "#6C5DD3",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#6C5DD3",
+
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+
+    shadowOpacity: 0.25,
+
+    shadowRadius: 10,
+
     elevation: 5,
+
+    marginTop: 1,
   },
-  ctaText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
+
+  getStartedText: {
+    color: "#FFFFFF",
+
+    fontSize: 15.5,
+
+    fontWeight: "700",
+
+    marginRight: 10,
   },
-  loginRow: {
-    flexDirection: 'row',
-    marginTop: 18,
-    marginBottom: 16,
+
+  /* =========================
+     LOGIN
+  ========================== */
+
+  loginContainer: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    marginTop: 0,
   },
+
   loginText: {
-    fontSize: 15,
-    color: '#8B8CA0',
+    fontSize: 12.5,
+    color: "#898897",
   },
+
   loginLink: {
-    fontSize: 15,
-    color: '#6C4CE0',
-    fontWeight: '700',
+    fontSize: 12.5,
+
+    color: "#6C5DD3",
+
+    fontWeight: "700",
   },
 });

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+
 import {
   View,
   Text,
@@ -10,21 +11,40 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, router } from "expo-router";
+
+import {
+  useFocusEffect,
+  router,
+} from "expo-router";
 
 import {
   User,
   Settings,
-  Bell,
   CircleHelp,
   LogOut,
   ChevronRight,
   Camera,
+  ShieldCheck,
 } from "lucide-react-native";
 
 import { getUserById } from "@/services/user";
+
+
+// ======================================================
+// COLORS
+// ======================================================
+
+const PURPLE = "#6C5DD3";
+const BACKGROUND = "#F9F8FD";
+
+
+// ======================================================
+// USER INTERFACE
+// ======================================================
 
 interface IUser {
   id: string;
@@ -36,30 +56,55 @@ interface IUser {
   profileImage?: string;
 }
 
+
+// ======================================================
+// PROFILE SCREEN
+// ======================================================
+
 export default function ProfileScreen() {
-  const [user, setUser] = useState<IUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+
+  const [user, setUser] =
+    useState<IUser | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+
+  // ======================================================
+  // FETCH PROFILE
+  // ======================================================
 
   const fetchProfile = async () => {
+
     try {
 
-      const savedUser = await AsyncStorage.getItem("user");
+      const savedUser =
+        await AsyncStorage.getItem("user");
 
       if (!savedUser) {
+
         router.replace("/auth/login");
+
         return;
       }
 
-      const parsedUser = JSON.parse(savedUser);
+      const parsedUser =
+        JSON.parse(savedUser);
 
-      const response = await getUserById(parsedUser.id);
+      const response =
+        await getUserById(parsedUser.id);
 
       setUser(response.user);
 
     } catch (error) {
 
-      console.log(error);
+      console.log(
+        "PROFILE ERROR:",
+        error
+      );
 
       Alert.alert(
         "Error",
@@ -74,16 +119,36 @@ export default function ProfileScreen() {
     }
   };
 
+
+  // ======================================================
+  // SCREEN FOCUS
+  // ======================================================
+
   useFocusEffect(
     useCallback(() => {
+
       fetchProfile();
+
     }, [])
   );
 
+
+  // ======================================================
+  // REFRESH
+  // ======================================================
+
   const onRefresh = () => {
+
     setRefreshing(true);
+
     fetchProfile();
+
   };
+
+
+  // ======================================================
+  // LOGOUT
+  // ======================================================
 
   const logout = () => {
 
@@ -93,325 +158,685 @@ export default function ProfileScreen() {
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
         },
+
         {
           text: "Logout",
           style: "destructive",
+
           onPress: async () => {
-            await AsyncStorage.removeItem("user");
-            router.replace("/auth/login");
-          }
-        }
+
+            await AsyncStorage.removeItem(
+              "user"
+            );
+
+            await AsyncStorage.removeItem(
+              "token"
+            );
+
+            router.replace(
+              "/auth/login"
+            );
+
+          },
+        },
       ]
     );
 
   };
 
+
+  // ======================================================
+  // MENU ITEM
+  // ======================================================
+
   const MenuItem = ({
     title,
+    subtitle,
     icon,
     onPress,
     danger = false,
-  }: any) => (
+  }: {
+    title: string;
+    subtitle?: string;
+    icon: React.ReactNode;
+    onPress: () => void;
+    danger?: boolean;
+  }) => (
+
     <TouchableOpacity
-      activeOpacity={0.85}
       style={styles.menuItem}
+      activeOpacity={0.8}
       onPress={onPress}
     >
 
       <View style={styles.menuLeft}>
 
-        <View style={styles.iconBox}>
+        <View
+          style={[
+            styles.iconBox,
+            danger &&
+              styles.dangerIconBox,
+          ]}
+        >
           {icon}
         </View>
 
-        <Text
-          style={[
-            styles.menuText,
-            danger && { color: "#EF4444" }
-          ]}
-        >
-          {title}
-        </Text>
+        <View style={styles.menuTextContainer}>
+
+          <Text
+            style={[
+              styles.menuTitle,
+              danger &&
+                styles.dangerMenuTitle,
+            ]}
+          >
+            {title}
+          </Text>
+
+          {subtitle ? (
+            <Text style={styles.menuSubtitle}>
+              {subtitle}
+            </Text>
+          ) : null}
+
+        </View>
 
       </View>
 
       {!danger && (
         <ChevronRight
-          color="#B5B5B5"
-          size={22}
+          size={20}
+          color="#B5B2C0"
         />
       )}
 
     </TouchableOpacity>
+
   );
 
+
+  // ======================================================
+  // LOADING
+  // ======================================================
+
   if (loading) {
+
     return (
       <View style={styles.loader}>
+
         <ActivityIndicator
           size="large"
-          color="#6C4CE0"
+          color={PURPLE}
         />
+
+        <Text style={styles.loadingText}>
+          Loading profile...
+        </Text>
+
       </View>
-    )
+    );
+
   }
+
+
+  // ======================================================
+  // MAIN UI
+  // ======================================================
 
   return (
 
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
-      >
+      <View style={styles.container}>
 
-        {/* Header */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={PURPLE}
+            />
+          }
+          contentContainerStyle={
+            styles.scrollContent
+          }
+        >
 
-        <View style={styles.header}>
+          {/* ==================================================
+              HEADER
+          ================================================== */}
 
-          <Text style={styles.profileTitle}>
-            Profile
+          <View style={styles.header}>
+
+            <View>
+
+              <Text style={styles.headerTitle}>
+                Profile
+              </Text>
+
+              <Text style={styles.headerSubtitle}>
+                Manage your personal account
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          {/* ==================================================
+              PROFILE CARD
+          ================================================== */}
+
+          <View style={styles.profileCard}>
+
+            <View style={styles.profileImageWrapper}>
+
+              <Image
+                source={
+                  user?.profileImage
+                    ? {
+                        uri: user.profileImage,
+                      }
+                    : require("../../../assets/images/profile_placeholder.jpg")
+                }
+                style={styles.profileImage}
+              />
+
+              <View style={styles.cameraButton}>
+
+                <Camera
+                  size={16}
+                  color="#FFFFFF"
+                />
+
+              </View>
+
+            </View>
+
+
+            <Text style={styles.userName}>
+              {user?.name || "Pet Parent"}
+            </Text>
+
+
+            <Text style={styles.userEmail}>
+              {user?.email || ""}
+            </Text>
+
+
+            <View style={styles.profileBadge}>
+
+              <ShieldCheck
+                size={14}
+                color={PURPLE}
+              />
+
+              <Text style={styles.profileBadgeText}>
+                PetCare Member
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          {/* ==================================================
+              ACCOUNT SECTION
+          ================================================== */}
+
+          <Text style={styles.sectionTitle}>
+            Account
           </Text>
 
-        </View>
+          <View style={styles.menuCard}>
 
-        {/* Profile Card */}
-
-        <View style={styles.profileCard}>
-
-          <View style={styles.imageContainer}>
-
-            <Image
-              source={
-                user?.profileImage
-                  ? { uri: user.profileImage }
-                  : require("../../../assets/images/profile_placeholder.jpg")
+            <MenuItem
+              title="Personal Information"
+              subtitle="Name, phone, location & bio"
+              icon={
+                <User
+                  size={21}
+                  color={PURPLE}
+                />
               }
-              style={styles.profileImage}
+              onPress={() =>
+                router.push(
+                  "/tabs/screen/profile/personal-info"
+                )
+              }
             />
 
-            <TouchableOpacity
-              style={styles.cameraButton}
-            >
-              <Camera
-                size={18}
-                color="#fff"
-              />
-            </TouchableOpacity>
+            <View style={styles.divider} />
+
+            <MenuItem
+              title="Account Settings"
+              subtitle="Password, notifications & preferences"
+              icon={
+                <Settings
+                  size={21}
+                  color={PURPLE}
+                />
+              }
+              onPress={() =>
+                router.push(
+                  "/tabs/screen/profile/account-setting"
+                )
+              }
+            />
+
+            <View style={styles.divider} />
+
+            <MenuItem
+              title="Help & Support"
+              subtitle="FAQs, support & app information"
+              icon={
+                <CircleHelp
+                  size={21}
+                  color={PURPLE}
+                />
+              }
+              onPress={() =>
+                router.push(
+                  "/tabs/screen/profile/help&support"
+                )
+              }
+            />
 
           </View>
 
-          <Text style={styles.userName}>
-            {user?.name}
+
+          {/* ==================================================
+              LOGOUT
+          ================================================== */}
+
+          <Text style={styles.sectionTitle}>
+            Account Actions
           </Text>
 
-          <Text style={styles.userEmail}>
-            {user?.email}
-          </Text>
-
-        </View>
-
-        {/* Menu */}
-
-        <View style={styles.menuContainer}>
-          <MenuItem
-            title="Personal Information"
-            icon={<User size={22} color="#6C4CE0" />}
-            onPress={() => router.push("/tabs/screen/profile/personal-info")}
-          />
-
-          <MenuItem
-            title="Account Settings"
-            icon={<Settings size={22} color="#6C4CE0" />}
-            onPress={() => router.push("/tabs/screen/profile/account-setting")}
-          />
-
-          <MenuItem
-            title="Help & Support"
-            icon={<CircleHelp size={22} color="#6C4CE0" />}
-            onPress={() => router.push("/tabs/screen/profile/help&support")}
-          />
-
-          <MenuItem
-            title="Logout"
-            icon={<LogOut size={22} color="#EF4444" />}
-            danger
+          <TouchableOpacity
+            style={styles.logoutCard}
+            activeOpacity={0.8}
             onPress={logout}
-          />
+          >
 
-          <View style={styles.footer}>
-            <Text style={styles.footerTitle}>PetCare</Text>
-            <Text style={styles.footerVersion}>
-              Version 1.0.0
-            </Text>
-          </View>
+            <View style={styles.logoutIcon}>
 
-        </View>
+              <LogOut
+                size={21}
+                color="#EF4444"
+              />
 
-      </ScrollView>
+            </View>
+
+            <View style={styles.logoutTextContainer}>
+
+              <Text style={styles.logoutTitle}>
+                Logout
+              </Text>
+
+              <Text style={styles.logoutSubtitle}>
+                Sign out of your PetCare account
+              </Text>
+
+            </View>
+
+            <ChevronRight
+              size={20}
+              color="#EF4444"
+            />
+
+          </TouchableOpacity>
+
+        </ScrollView>
+
+      </View>
 
     </SafeAreaView>
+
   );
 }
 
 
+// ========================================================
+// STYLES
+// ========================================================
+
 const styles = StyleSheet.create({
+
+  // ======================================================
+  // MAIN
+  // ======================================================
+
+  safeArea: {
+    flex: 1,
+    backgroundColor: BACKGROUND,
+  },
 
   container: {
     flex: 1,
-    backgroundColor: "#F5F6FB",
+    backgroundColor: BACKGROUND,
   },
 
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F5F6FB",
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 150,
   },
+
+
+  // ======================================================
+  // HEADER
+  // ======================================================
 
   header: {
-    height: 210,
-    backgroundColor: "#6C4CE0",
-    borderBottomLeftRadius: 45,
-    borderBottomRightRadius: 45,
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: 18,
+    marginBottom: 20,
   },
 
-  profileTitle: {
+  headerTitle: {
     fontSize: 30,
-    fontWeight: "700",
-    color: "#fff",
-    marginTop: 20,
+    fontWeight: "800",
+    color: "#242331",
   },
+
+  headerSubtitle: {
+    fontSize: 13,
+    color: "#92909E",
+    marginTop: 3,
+  },
+
+
+  // ======================================================
+  // PROFILE CARD
+  // ======================================================
 
   profileCard: {
-    marginHorizontal: 24,
-    backgroundColor: "#fff",
-    borderRadius: 30,
-    marginTop: -65,
-    alignItems: "center",
-    paddingTop: 75,
-    paddingBottom: 35,
-
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-
-  imageContainer: {
-    position: "absolute",
-    top: -60,
-  },
-
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 5,
-    borderColor: "#fff",
-  },
-
-  cameraButton: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#6C4CE0",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-
-  userName: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#222",
-    marginTop: 6,
-  },
-
-  userEmail: {
-    fontSize: 15,
-    color: "#777",
-    marginTop: 5,
-  },
-
-  menuContainer: {
-    marginTop: 35,
-    paddingHorizontal: 24,
-  },
-
-
-  menuItem: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    marginBottom: 16,
+    borderRadius: 24,
 
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+
+    paddingTop: 22,
+    paddingBottom: 20,
+
+    borderWidth: 1,
+    borderColor: "#ECEAF2",
 
     shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     shadowOffset: {
       width: 0,
       height: 3,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+
+    elevation: 2,
+  },
+
+  profileImageWrapper: {
+    position: "relative",
+    marginBottom: 11,
+  },
+
+  profileImage: {
+    width: 100,
+    height: 100,
+
+    borderRadius: 50,
+
+    borderWidth: 4,
+    borderColor: "#EFECFB",
+
+    backgroundColor: "#EFECFB",
+  },
+
+  cameraButton: {
+    position: "absolute",
+
+    right: -1,
+    bottom: 2,
+
+    width: 31,
+    height: 31,
+
+    borderRadius: 16,
+
+    backgroundColor: PURPLE,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+  },
+
+  userName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#242331",
+  },
+
+  userEmail: {
+    fontSize: 13,
+    color: "#92909E",
+    marginTop: 4,
+  },
+
+  profileBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: "#EFECFB",
+
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+
+    borderRadius: 50,
+
+    marginTop: 11,
+  },
+
+  profileBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: PURPLE,
+    marginLeft: 5,
+  },
+
+
+  // ======================================================
+  // SECTION
+  // ======================================================
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#242331",
+
+    marginTop: 24,
+    marginBottom: 11,
+  },
+
+
+  // ======================================================
+  // MENU
+  // ======================================================
+
+  menuCard: {
+    backgroundColor: "#FFFFFF",
+
+    borderRadius: 20,
+
+    borderWidth: 1,
+    borderColor: "#ECEAF2",
+
+    overflow: "hidden",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+
+    elevation: 2,
+  },
+
+  menuItem: {
+    minHeight: 75,
+
+    paddingHorizontal: 15,
+
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   menuLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
 
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
-    backgroundColor: "#F2EDFF",
+    width: 46,
+    height: 46,
+
+    borderRadius: 14,
+
+    backgroundColor: "#EFECFB",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginRight: 13,
+  },
+
+  menuTextContainer: {
+    flex: 1,
+  },
+
+  menuTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#242331",
+  },
+
+  menuSubtitle: {
+    fontSize: 11,
+    color: "#92909E",
+    marginTop: 3,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#F0EEF5",
+    marginLeft: 74,
+    marginRight: 15,
+  },
+
+
+  // ======================================================
+  // LOGOUT
+  // ======================================================
+
+  logoutCard: {
+    minHeight: 70,
+
+    backgroundColor: "#FFFFFF",
+
+    borderRadius: 20,
+
+    paddingHorizontal: 15,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    borderWidth: 1,
+    borderColor: "#F2DADA",
+  },
+
+  logoutIcon: {
+    width: 46,
+    height: 46,
+
+    borderRadius: 14,
+
+    backgroundColor: "#FEECEC",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginRight: 13,
+  },
+
+  logoutTextContainer: {
+    flex: 1,
+  },
+
+  logoutTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#EF4444",
+  },
+
+  logoutSubtitle: {
+    fontSize: 11,
+    color: "#A78B8B",
+    marginTop: 3,
+  },
+
+  dangerIconBox: {
+    backgroundColor: "#FEECEC",
+  },
+
+  dangerMenuTitle: {
+    color: "#EF4444",
+  },
+
+
+  // ======================================================
+  // FOOTER
+  // ======================================================
+
+  footer: {
+    alignItems: "center",
+    marginTop: 28,
+    marginBottom: 20,
+  },
+
+  footerTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#AAA7B2",
+  },
+
+  footerVersion: {
+    fontSize: 11,
+    color: "#C0BDC7",
+    marginTop: 3,
+  },
+
+
+  // ======================================================
+  // LOADER
+  // ======================================================
+
+  loader: {
+    flex: 1,
+    backgroundColor: BACKGROUND,
+
     justifyContent: "center",
     alignItems: "center",
   },
 
-  menuText: {
-    marginLeft: 16,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#222",
-  },
-
-  footer: {
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 40,
-  },
-
-  footerTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#999",
-  },
-
-  footerVersion: {
-    marginTop: 4,
+  loadingText: {
+    marginTop: 10,
     fontSize: 13,
-    color: "#B5B5B5",
+    color: "#92909E",
   },
 
 });

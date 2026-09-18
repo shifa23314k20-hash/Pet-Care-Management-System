@@ -251,16 +251,30 @@ export const getHealthRecordById = async (req, res) => {
       });
     }
 
+    const pet = await Pet.findOne({
+      id: healthRecord.petId,
+      userId,
+    }).select(
+      "id name species breed image photo"
+    );
+
     return res.status(200).json({
       success: true,
+
       healthRecord,
+
+      pet: pet || null,
     });
   } catch (error) {
-    console.log("GET HEALTH RECORD ERROR:", error);
+    console.log(
+      "GET HEALTH RECORD ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch health record",
+      message:
+        "Failed to fetch health record",
     });
   }
 };

@@ -1,20 +1,21 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  StatusBar,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { forgotPassword } from "@/services/auth";
 
 export default function ForgotPassword() {
@@ -24,29 +25,52 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
 
   const handleSendOTP = async () => {
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email.");
+    const userEmail = email.trim().toLowerCase();
+
+    if (!userEmail) {
+      Alert.alert(
+        "Required Field",
+        "Please enter your email address."
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await forgotPassword({ email });
-
-      Alert.alert("Success", response.message);
-
-      router.push({
-        pathname: "/auth/reset-password",
-        params: { email },
+      const response = await forgotPassword({
+        email: userEmail,
       });
 
-    } catch (error: any) {
       Alert.alert(
-        "Error",
+        "OTP Sent",
+        response?.message ||
+          "Your OTP has been generated.",
+        [
+          {
+            text: "Continue",
+            onPress: () => {
+              router.push({
+                pathname: "/auth/reset-password",
+                params: {
+                  email: userEmail,
+                },
+              });
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.log(
+        "FORGOT PASSWORD ERROR:",
+        error?.response?.data
+      );
+
+      Alert.alert(
+        "Unable to Continue",
         error?.response?.data?.message ||
           error?.message ||
-          "Something went wrong"
+          "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -55,52 +79,100 @@ export default function ForgotPassword() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F7FC" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F9F8FD"
+      />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
+          {/* Back */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color="#1F2340" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#1D1E2C"
+            />
           </TouchableOpacity>
 
-          <Text style={styles.title}>Forgot Password?</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Forgot Password?
+            </Text>
 
-          <Text style={styles.subtitle}>
-            Enter your registered email to receive an OTP.
-          </Text>
+            <Text style={styles.subtitle}>
+              Enter your registered email and we'll
+              send you an OTP to reset your password.
+            </Text>
+          </View>
 
-          <View style={styles.inputWrap}>
+          {/* Email */}
+          <View style={styles.inputContainer}>
             <TextInput
+              style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#9C9CB0"
+              placeholderTextColor="#A3A2B1"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={styles.input}
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleSendOTP}
             />
           </View>
 
+          {/* Send OTP */}
           <TouchableOpacity
-            style={styles.button}
+            style={[
+              styles.button,
+              loading && styles.disabledButton,
+            ]}
             onPress={handleSendOTP}
             disabled={loading}
+            activeOpacity={0.85}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.buttonText}>Send OTP</Text>
+              <Text style={styles.buttonText}>
+                Send OTP
+              </Text>
             )}
           </TouchableOpacity>
+
+          {/* Back to Login */}
+          <View style={styles.loginRow}>
+            <Text style={styles.loginText}>
+              Remember your password?{" "}
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                router.replace("/auth/login")
+              }
+            >
+              <Text style={styles.loginLink}>
+                Login
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -110,55 +182,115 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F7FC",
+    backgroundColor: "#F9F8FD",
   },
-  scroll: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+
+  keyboardView: {
+    flex: 1,
   },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 22,
+    paddingBottom: 28,
+  },
+
   backButton: {
     width: 40,
     height: 40,
     justifyContent: "center",
-    marginTop: 8,
+    alignItems: "flex-start",
+    marginTop: 4,
   },
+
+  header: {
+    marginTop: 26,
+    marginBottom: 29,
+  },
+
   title: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: "800",
-    color: "#1F2340",
-    marginTop: 20,
+    color: "#1D1E2C",
+    letterSpacing: -0.4,
   },
+
   subtitle: {
-    color: "#8B8CA0",
-    fontSize: 15,
-    marginTop: 8,
-    marginBottom: 28,
-    lineHeight: 22,
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: "#898897",
+    marginTop: 7,
+    maxWidth: 340,
   },
-  inputWrap: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+
+  inputContainer: {
+    height: 53,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#EAE9F2",
-    paddingHorizontal: 16,
-    height: 54,
+    borderColor: "#E7E5EE",
+    borderRadius: 13,
+    paddingHorizontal: 15,
     justifyContent: "center",
+
+    shadowColor: "#B9B5C9",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 1,
   },
+
   input: {
-    fontSize: 15,
-    color: "#1F2340",
+    height: "100%",
+    fontSize: 14,
+    color: "#202131",
   },
+
   button: {
-    backgroundColor: "#6C4CE0",
-    borderRadius: 14,
-    height: 54,
+    height: 53,
+    borderRadius: 13,
+    backgroundColor: "#6C5DD3",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 28,
+    marginTop: 20,
+
+    shadowColor: "#6C5DD3",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
   },
+
+  disabledButton: {
+    opacity: 0.7,
+  },
+
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "700",
-    fontSize: 16,
+  },
+
+  loginRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
+  },
+
+  loginText: {
+    fontSize: 12.5,
+    color: "#898897",
+  },
+
+  loginLink: {
+    fontSize: 12.5,
+    color: "#6C5DD3",
+    fontWeight: "700",
   },
 });

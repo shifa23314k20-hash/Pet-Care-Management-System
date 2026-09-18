@@ -15,8 +15,8 @@ export const getHealthRecordById = async (id: string) => {
   return response.data;
 };
 
-export const getHealthRecordsByPetName = async (petName: string) => {
-  const response = await api.get(`/health-record/pet/${petName}`);
+export const getHealthRecordsByPetId = async (petId: string) => {
+  const response = await api.get(`/health-record/pet/${petId}`);
   return response.data;
 };
 
